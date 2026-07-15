@@ -127,6 +127,7 @@ const defaultState = {
   owned: ["mokotow-starter"],
   conditions: { "mokotow-starter": 72 },
   propertyLevels: {},
+  propertyUseModes: {},
   tenants: {
     "mokotow-starter": {
       id: "maria-teacher",
@@ -720,8 +721,9 @@ function createAuctionCard() {
 function renderPortfolio() {
   const portfolioList = document.querySelector("#portfolioList");
   const owned = properties.filter((property) => state.owned.includes(property.id));
-  const homes = owned.filter((property) => property.useType === "residential");
-  const workProperties = owned.filter((property) => property.useType === "commercial");
+  const needsDecision = owned.filter((property) => isReadyUnused(property));
+  const homes = owned.filter((property) => property.useType === "residential" && !needsDecision.includes(property));
+  const workProperties = owned.filter((property) => property.useType === "commercial" && !needsDecision.includes(property));
 
   renderPortfolioDashboard(owned);
   renderPortfolioFocus(owned);
@@ -733,6 +735,7 @@ function renderPortfolio() {
   }
 
   portfolioList.innerHTML = "";
+  if (needsDecision.length) portfolioList.appendChild(createPortfolioGroup("Needs a decision", needsDecision, ""));
   portfolioList.appendChild(createPortfolioGroup("People live here", homes, "No homes owned yet."));
   portfolioList.appendChild(createPortfolioGroup("For work and shops", workProperties, "No work properties owned yet."));
   portfolioList.appendChild(createUnlockPreview());
@@ -822,6 +825,9 @@ function renderPropertyInfo() {
 
   propertyInfoView.innerHTML = `
     <div class="detail-stack">
+      ${owned ? renderPropertyStatusPanel(property) : ""}
+      ${owned ? renderIncomePanel(property) : ""}
+      ${owned ? renderLifecyclePanel(property) : ""}
       <article class="property-hero-card">
         <div class="property-hero-icon">${property.icon}</div>
         <p>${property.category}</p>
@@ -829,8 +835,8 @@ function renderPropertyInfo() {
         <strong>Lvl ${propertyLevel}</strong>
         <div class="xp-track"><span style="--xp-width: ${getPropertyProgress(property.id)}%"></span></div>
       </article>
-      <article class="detail-panel">
-        <h3>Building info</h3>
+      <article class="detail-panel advanced-panel">
+        <h3>Building details</h3>
         <p>${property.description}</p>
         <div class="item-meta">
           <span>Base value ${formatMoney(property.price)}</span>
@@ -842,7 +848,6 @@ function renderPropertyInfo() {
           <span>${owned ? "Owned" : "Not owned"}</span>
         </div>
       </article>
-      ${owned ? renderLifecyclePanel(property) : ""}
       <article class="detail-panel">
         <h3>Upgrade</h3>
         <p>Raise the building level to increase daily rent and valuation.</p>
@@ -861,8 +866,8 @@ function renderPropertyInfo() {
         </div>
         <button class="primary-action" id="maintainPropertyButton" type="button"${!owned || condition >= 100 || state.cash < maintenanceCost ? " disabled" : ""}>Maintain property</button>
       </article>
-      <article class="detail-panel">
-        <h3>Market sale</h3>
+      <article class="detail-panel property-management">
+        <h3>Property management</h3>
         <p>${saleHelp}</p>
         <div class="sale-price-row">
           <label>
@@ -872,8 +877,8 @@ function renderPropertyInfo() {
           <span>${formatMoney(suggestedSalePrice)}</span>
         </div>
         <div class="action-grid">
-          <button class="danger-action" id="listForSaleButton" type="button"${!canSell ? " disabled" : ""}>${listedPrice ? "Update listing" : "Put on market"}</button>
-          <button class="secondary-action" id="cancelSaleButton" type="button"${!listedPrice ? " disabled" : ""}>Cancel listing</button>
+          <button class="property-management-link" id="listForSaleButton" type="button"${!canSell ? " disabled" : ""}>${listedPrice ? "Update sale listing" : "Sell property"}</button>
+          <button class="property-management-link" id="cancelSaleButton" type="button"${!listedPrice ? " disabled" : ""}>Cancel sale listing</button>
         </div>
       </article>
     </div>
@@ -891,6 +896,7 @@ function renderPropertyInfo() {
   const advertiseButton = document.querySelector("#publishAdvertisementButton");
   const negotiationButtons = document.querySelectorAll("[data-negotiation]");
   const signLeaseButton = document.querySelector("#signLeaseButton");
+  const useModeButtons = document.querySelectorAll("[data-use-mode]");
 
   maintainButton?.addEventListener("click", () => maintainProperty(property.id));
   upgradeButton?.addEventListener("click", () => upgradeProperty(property.id));
@@ -905,6 +911,7 @@ function renderPropertyInfo() {
     button.addEventListener("click", () => negotiateOffer(property.id, button.dataset.tenantOffer, button.dataset.negotiation));
   });
   signLeaseButton?.addEventListener("click", () => signLease(property.id));
+  useModeButtons.forEach((button) => button.addEventListener("click", () => choosePropertyUse(property.id, button.dataset.useMode)));
   evictionButtons.forEach((button) => {
     button.addEventListener("click", () => tryEvictionAction(property.id, button.dataset.evictionAction));
   });
@@ -940,6 +947,62 @@ function createPortfolioGroup(title, groupProperties, emptyText) {
   return section;
 }
 
+function isReadyUnused(property) {
+  const stage = getPropertyStage(property.id);
+  return !getTenant(property.id) && ["ready-renovation", "ready-advertise", "vacant"].includes(stage.stage);
+}
+
+function getProductivityState(property) {
+  const stage = getPropertyStage(property.id);
+  if (state.listedForSale[property.id]) return "FOR_SALE";
+  if (getEvictionCase(property.id)) return "UNDER_MAINTENANCE";
+  if (isNotaryPending(property.id)) return "NOT_READY";
+  if (stage.stage === "advertising" && getAdvertisement(property.id)?.applications.length) return "APPLICATIONS_AVAILABLE";
+  if (stage.stage === "advertising") return stage.useMode === "commercial" ? "COMMERCIAL_SETUP" : "RESIDENTIAL_LISTING";
+  if (getTenant(property.id)) return stage.useMode === "commercial" || property.useType === "commercial" ? "COMMERCIAL_OCCUPIED" : "RESIDENTIAL_OCCUPIED";
+  if (isReadyUnused(property)) return "READY_UNUSED";
+  return "VACANT";
+}
+
+function renderPropertyStatusPanel(property) {
+  const productivity = getProductivityState(property);
+  if (productivity === "READY_UNUSED") {
+    const homeRent = formatMoney(getPotentialRent(property) * 30);
+    const businessRent = formatMoney(Math.round(getPotentialRent(property) * 30 * 1.3));
+    return `
+      <article class="detail-panel property-next-step not-earning">
+        <span class="status-kicker">Not earning · 0 PLN income</span>
+        <h3>Your property is ready</h3>
+        <p>It is empty. Choose how this property will earn money.</p>
+        <div class="use-choice-grid">
+          <article><strong>Home rental</strong><span>Find a person or family.</span><em>Est. ${homeRent} / month</em><button class="primary-action" type="button" data-use-mode="residential">Rent as a home</button></article>
+          <article><strong>Business use</strong><span>Find a commercial tenant.</span><em>Est. ${businessRent} / month</em><button class="secondary-action" type="button" data-use-mode="commercial">Use as a business</button></article>
+        </div>
+      </article>
+    `;
+  }
+
+  const labels = {
+    NOT_READY: ["Documents", "Ownership transfer in progress", "Waiting for notary"],
+    RESIDENTIAL_LISTING: ["Home", "Looking for a tenant", "Advertisement live"],
+    COMMERCIAL_SETUP: ["Business", "Finding a business tenant", "Advertisement live"],
+    APPLICATIONS_AVAILABLE: ["Mail", "Applications need your decision", "Review applicants"],
+    RESIDENTIAL_OCCUPIED: ["Key", `Earning rent from ${getTenant(property.id)?.name || "your tenant"}`, "Occupied"],
+    COMMERCIAL_OCCUPIED: ["Store", `Commercial income from ${getTenant(property.id)?.name || "your tenant"}`, "Business occupied"],
+    FOR_SALE: ["Sale", "Property is listed for sale", "Awaiting buyer"],
+    UNDER_MAINTENANCE: ["Tools", "Contract cancellation in progress", "Management required"]
+  };
+  const [icon, detail, label] = labels[productivity] || ["Home", "Property is ready", "Vacant"];
+  return `<article class="detail-panel property-next-step status-${productivity.toLowerCase()}"><span class="status-kicker">${icon} · ${label}</span><h3>${detail}</h3><p>${getPortfolioStatus(property)}</p></article>`;
+}
+
+function renderIncomePanel(property) {
+  const tenant = getTenant(property.id);
+  const current = getActiveRent(property);
+  const expected = getPotentialRent(property);
+  return `<article class="detail-panel income-summary"><h3>Income summary</h3><div class="income-metrics"><span><small>Current income</small><strong>${formatMoney(current)} / day</strong></span><span><small>Expected income</small><strong>${formatMoney(expected)} / day</strong></span><span><small>Next payment</small><strong>${getNextPaymentLabel(property)}</strong></span></div>${tenant ? `<p>${tenant.name} is the current tenant.</p>` : ""}</article>`;
+}
+
 function renderLifecyclePanel(property) {
   const tenant = getTenant(property.id);
   const evictionCase = getEvictionCase(property.id);
@@ -957,15 +1020,10 @@ function renderLifecyclePanel(property) {
   }
 
   if (stage.stage === "ready-renovation") {
-    const cost = getRenovationCost(property);
     return `
       <article class="detail-panel lifecycle-panel lifecycle-maintenance">
-        <h3>Tools · Ready for renovation</h3>
-        <p>Improve the condition before advertising, or advertise immediately for a faster but weaker applicant pool.</p>
-        <div class="action-grid two">
-          <button class="primary-action" id="renovateLifecycleButton" type="button"${state.cash < cost ? " disabled" : ""}>Renovate · ${formatMoney(cost)}</button>
-          <button class="secondary-action" id="publishAdvertisementButton" type="button">Advertise now</button>
-        </div>
+        <h3>Ready → Choose use → Listing → Income</h3>
+        <p>Choose a use above. Renovation remains available later if you want to improve the property first.</p>
       </article>
     `;
   }
@@ -1059,10 +1117,10 @@ function renderLifecyclePanel(property) {
   }
 
   return `
-    <article class="detail-panel lifecycle-panel">
-      <h3>Ready to advertise</h3>
-      <p>${property.useType === "commercial" ? "Find a business tenant. Nearby businesses of the same type lower the rent you can ask." : "Publish an ad to begin the demand cycle and meet prospective tenants."}</p>
-      <button class="primary-action" id="publishAdvertisementButton" type="button">Publish advertisement</button>
+    <article class="detail-panel lifecycle-panel lifecycle-applications">
+      <h3>${stage.useMode === "commercial" ? "Business setup" : "Rent as a home"}</h3>
+      <p>${stage.useMode === "commercial" ? "Choose a business tenant to start a fixed commercial income stream." : "Set up a rental listing and begin finding a tenant."}</p>
+      <button class="primary-action" id="publishAdvertisementButton" type="button">${stage.useMode === "commercial" ? "Find a business tenant" : "Create rental listing"}</button>
     </article>
   `;
 }
@@ -1207,15 +1265,16 @@ function createPropertyCard(property, mode) {
   const listedPrice = state.listedForSale[property.id];
   const rentalStatus = getPortfolioStatus(property);
   const rentForCard = owned ? getActiveRent(property) : getPotentialRent(property);
+  const needsDecision = owned && isReadyUnused(property);
   const card = document.createElement("article");
   card.className = `item-card${listedPrice ? " listed" : ""}${mode === "owned" ? ` property-status-card ${getStatusTone(property)}` : ""}`;
   card.innerHTML = mode === "owned" ? `
     <header>
       <div class="property-card-title"><span class="property-category-icon">${getCategoryIcon(property)}</span><div><h3>${property.name}</h3><p>${property.district} · ${property.useType === "commercial" ? "Work space" : "Home"}</p></div></div>
-      <strong>${formatMoney(getMonthlyRent(property))}</strong>
+      <strong>${needsDecision ? "0 PLN" : formatMoney(getMonthlyRent(property))}</strong>
     </header>
-    <div class="property-status-line"><span class="status-dot"></span>${rentalStatus}</div>
-    <div class="property-card-facts"><span>Monthly rent</span><span>${getNextPaymentLabel(property)}</span><span>${getOccupancyLabel(property)}</span></div>
+    <div class="property-status-line"><span class="status-dot"></span>${needsDecision ? "Not earning money · choose a use" : rentalStatus}</div>
+    <div class="property-card-facts"><span>${needsDecision ? "0 PLN income" : "Monthly rent"}</span><span>${needsDecision ? "Home or business" : getNextPaymentLabel(property)}</span><span>${needsDecision ? "Decision needed" : getOccupancyLabel(property)}</span></div>
   ` : `
     <header><h3>${property.icon} ${property.name}</h3><strong>${formatMoney(listedPrice || property.price)}</strong></header>
     <p>${property.description}</p>
@@ -1251,7 +1310,7 @@ function createPropertyCard(property, mode) {
     const infoButton = document.createElement("button");
     infoButton.className = "primary-action";
     infoButton.type = "button";
-    infoButton.textContent = "View property";
+    infoButton.textContent = needsDecision ? "Choose use" : "View property";
     infoButton.addEventListener("click", () => openPropertyInfo(property.id));
     actions.appendChild(infoButton);
     card.appendChild(actions);
@@ -1450,7 +1509,7 @@ function acceptTenantOffer(propertyId, offerId) {
     relationship: offer.risk === "low" ? 62 : offer.risk === "medium" ? 48 : 38,
     paymentHistory: "New lease"
   };
-  state.propertyStages[propertyId] = { stage: "lease-pending" };
+  state.propertyStages[propertyId] = { stage: "lease-pending", useMode: getPropertyStage(propertyId).useMode || state.propertyUseModes[propertyId] || property.useType };
   delete state.advertisements[propertyId];
   state.tenantMemories[offer.id] = {
     name: offer.name,
@@ -1476,7 +1535,7 @@ function signLease(propertyId) {
     return;
   }
 
-  state.propertyStages[propertyId] = { stage: "occupied" };
+  state.propertyStages[propertyId] = { stage: "occupied", useMode: stage.useMode || state.propertyUseModes[propertyId] || "residential" };
   const memory = state.tenantMemories[tenant.id];
   if (memory) {
     memory.events.push("Lease signed");
@@ -1644,10 +1703,22 @@ function publishAdvertisement(propertyId) {
     return;
   }
 
-  state.propertyStages[propertyId] = { stage: "advertising" };
+  state.propertyStages[propertyId] = { stage: "advertising", useMode: stage.useMode || properties.find((item) => item.id === propertyId)?.useType || "residential" };
   state.advertisements[propertyId] = { views: 0, visits: 0, applications: [], publishedDay: state.day };
   advanceTutorial("applications");
   pushToast("Advertisement published. Demand will grow each simulated day.");
+  saveState();
+  render();
+}
+
+function choosePropertyUse(propertyId, useMode) {
+  const property = properties.find((item) => item.id === propertyId);
+  const stage = getPropertyStage(propertyId);
+  if (!property || !["residential", "commercial"].includes(useMode) || !["ready-renovation", "ready-advertise", "vacant"].includes(stage.stage)) return;
+
+  state.propertyUseModes[propertyId] = useMode;
+  state.propertyStages[propertyId] = { stage: "ready-advertise", useMode };
+  pushToast(useMode === "commercial" ? "Business tenant path selected." : "Home rental path selected.");
   saveState();
   render();
 }
@@ -1990,7 +2061,7 @@ function getPortfolioStatus(property) {
   }
 
   if (stage.stage === "ready-renovation") {
-    return "Ready for Renovation";
+    return "Not earning · Choose how it will earn";
   }
 
   if (stage.stage === "advertising") {
@@ -1999,7 +2070,7 @@ function getPortfolioStatus(property) {
       : `Advertisement Live · ${advertisement?.views || 0} views / ${advertisement?.visits || 0} visits`;
   }
 
-  return "Ready to Advertise";
+  return "Not earning · Choose how it will earn";
 }
 
 function getTenantOffers(property) {
@@ -2007,10 +2078,11 @@ function getTenantOffers(property) {
     return [];
   }
 
-  const source = property.useType === "commercial" ? commercialTenants : residentialTenants;
+  const useMode = getPropertyStage(property.id).useMode || state.propertyUseModes[property.id] || property.useType;
+  const source = useMode === "commercial" ? commercialTenants : residentialTenants;
 
   return source.slice(0, 5).map((tenant, index) => {
-    const saturationPenalty = property.useType === "commercial"
+    const saturationPenalty = useMode === "commercial"
       ? getSaturationPenalty(property, tenant.category)
       : 0;
     const riskPremium = tenant.risk === "high" ? 1.1 : tenant.risk === "medium" ? 1.04 : 1;
@@ -2317,6 +2389,7 @@ function normalizeState(nextState = state, assign = true) {
   nextState.streetIssuesResolved = Array.isArray(nextState.streetIssuesResolved) ? nextState.streetIssuesResolved : [];
   nextState.conditions = nextState.conditions && typeof nextState.conditions === "object" ? nextState.conditions : {};
   nextState.propertyLevels = nextState.propertyLevels && typeof nextState.propertyLevels === "object" ? nextState.propertyLevels : {};
+  nextState.propertyUseModes = nextState.propertyUseModes && typeof nextState.propertyUseModes === "object" ? nextState.propertyUseModes : {};
   nextState.tenants = nextState.tenants && typeof nextState.tenants === "object" ? nextState.tenants : {};
   nextState.propertyStages = nextState.propertyStages && typeof nextState.propertyStages === "object" ? nextState.propertyStages : {};
   nextState.advertisements = nextState.advertisements && typeof nextState.advertisements === "object" ? nextState.advertisements : {};

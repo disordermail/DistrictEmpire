@@ -888,6 +888,9 @@ button.focus-card {
 
 .property-card-facts span { min-width: 0; }
 
+.property-status-card.attention { border-color: rgba(196, 85, 22, 0.34); background: var(--maintenance-soft); }
+.property-status-card.attention header > strong { color: var(--maintenance-strong); }
+
 .detail-stack {
   display: grid;
   gap: 10px;
@@ -1033,6 +1036,35 @@ button.focus-card {
   line-height: 1.35;
   margin-bottom: 10px;
 }
+
+.property-next-step { border-width: 2px; }
+.property-next-step.not-earning { border-color: rgba(196, 85, 22, 0.5); background: var(--maintenance-soft); }
+.status-kicker { display: block; margin-bottom: 6px; color: var(--maintenance-strong); font-size: 12px; font-weight: 900; text-transform: uppercase; }
+.status-residential_occupied, .status-commercial_occupied { border-color: rgba(7, 135, 95, 0.4); background: var(--income-soft); }
+.status-residential_occupied .status-kicker, .status-commercial_occupied .status-kicker { color: var(--income-strong); }
+.status-not_ready { border-color: rgba(182, 103, 9, 0.4); background: var(--waiting-soft); }
+.status-not_ready .status-kicker { color: var(--waiting-strong); }
+.status-applications_available { border-color: rgba(36, 94, 199, 0.36); background: var(--action-primary-soft); }
+.status-applications_available .status-kicker { color: var(--action-primary-hover); }
+
+.use-choice-grid { display: grid; gap: 8px; margin-top: 12px; }
+.use-choice-grid article { display: grid; gap: 5px; padding: 11px; border: 1px solid rgba(196, 85, 22, 0.24); border-radius: 8px; background: rgba(255, 255, 255, 0.66); }
+.use-choice-grid strong { font-size: 15px; }
+.use-choice-grid span { color: var(--muted); font-size: 13px; }
+.use-choice-grid em { color: var(--maintenance-strong); font-size: 13px; font-style: normal; font-weight: 900; }
+.use-choice-grid .primary-action, .use-choice-grid .secondary-action { margin-top: 4px; }
+
+.income-summary { background: #f8fafb; }
+.income-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.income-metrics span { min-width: 0; }
+.income-metrics small, .income-metrics strong { display: block; }
+.income-metrics small { color: var(--muted); font-size: 11px; }
+.income-metrics strong { margin-top: 3px; color: var(--ink); font-size: 13px; line-height: 1.2; }
+
+.advanced-panel { background: #fbfcfd; }
+.property-management { border-style: dashed; background: #fbfcfd; }
+.property-management-link { min-height: 36px; width: auto; margin: 4px 6px 0 0; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; }
+.property-management-link:disabled { border-color: var(--disabled-border); color: var(--disabled-text); cursor: not-allowed; }
 
 .condition-meter {
   height: 12px;
