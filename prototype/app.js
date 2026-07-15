@@ -328,6 +328,8 @@ function renderStatus() {
   const collectableRent = homeRent + shopRent;
   const issueCount = getIssueCount();
   const collectRentButton = document.querySelector("#collectRentButton");
+  const occupiedCount = ownedProperties.filter((property) => Boolean(getTenant(property.id))).length;
+  const rentCard = document.querySelector(".rent-collection-card");
 
   document.querySelector("#cashValue").textContent = formatMoney(state.cash);
   document.querySelector("#rentValue").textContent = formatMoney(dailyRent);
@@ -336,9 +338,16 @@ function renderStatus() {
   document.querySelector("#playerLevelValue").textContent = String(state.playerLevel);
   document.querySelector("#homeRentValue").textContent = formatMoney(homeRent);
   document.querySelector("#shopRentValue").textContent = formatMoney(shopRent);
-  collectRentButton.textContent = collectableRent > 0 ? `Collect ${formatMoney(collectableRent)}` : "No rent waiting";
-  collectRentButton.disabled = collectableRent <= 0;
+  document.querySelector("#rentKicker").textContent = collectableRent > 0 ? "Rent ready" : "Next rent";
+  document.querySelector("#rentReadyValue").textContent = collectableRent > 0 ? formatMoney(collectableRent) : "Tomorrow";
+  document.querySelector("#rentSource").textContent = collectableRent > 0
+    ? `From ${occupiedCount ? `${occupiedCount} occupied ${occupiedCount === 1 ? "property" : "properties"}` : "your tenants"}`
+    : occupiedCount ? `${occupiedCount} occupied ${occupiedCount === 1 ? "property" : "properties"} · next payment tomorrow` : "Sign a lease to start your first payment cycle";
+  collectRentButton.textContent = collectableRent > 0 ? `Collect ${formatMoney(collectableRent)}` : "View rent schedule";
+  collectRentButton.disabled = false;
   collectRentButton.classList.toggle("rent-ready", collectableRent > 0);
+  rentCard.classList.toggle("rent-ready-card", collectableRent > 0);
+  rentCard.classList.toggle("rent-waiting-card", collectableRent <= 0);
 
   portfolioBadge.hidden = collectableRent <= 0;
   portfolioBadge.textContent = "!";
@@ -939,9 +948,9 @@ function renderLifecyclePanel(property) {
 
   if (stage.stage === "notary") {
     return `
-      <article class="detail-panel lifecycle-panel">
-        <h3>Waiting for Notary</h3>
-        <p>Ownership paperwork is in progress. The property becomes available after ${stage.daysRemaining} simulated day${stage.daysRemaining === 1 ? "" : "s"}.</p>
+      <article class="detail-panel lifecycle-panel lifecycle-waiting">
+        <h3>Documents · Waiting for Notary</h3>
+        <p>Ownership transfer is progressing. ${stage.daysRemaining} simulated day${stage.daysRemaining === 1 ? "" : "s"} remaining.</p>
         <div class="lifecycle-track"><span class="active">Purchase</span><span class="active">Notary</span><span>Prepare</span><span>Advertise</span><span>Lease</span></div>
       </article>
     `;
@@ -950,8 +959,8 @@ function renderLifecyclePanel(property) {
   if (stage.stage === "ready-renovation") {
     const cost = getRenovationCost(property);
     return `
-      <article class="detail-panel lifecycle-panel">
-        <h3>Ready for renovation</h3>
+      <article class="detail-panel lifecycle-panel lifecycle-maintenance">
+        <h3>Tools · Ready for renovation</h3>
         <p>Improve the condition before advertising, or advertise immediately for a faster but weaker applicant pool.</p>
         <div class="action-grid two">
           <button class="primary-action" id="renovateLifecycleButton" type="button"${state.cash < cost ? " disabled" : ""}>Renovate · ${formatMoney(cost)}</button>
@@ -963,9 +972,9 @@ function renderLifecyclePanel(property) {
 
   if (stage.stage === "advertising" && advertisement && !advertisement.applications.length) {
     return `
-      <article class="detail-panel lifecycle-panel">
-        <h3>Advertisement live</h3>
-        <p>Your listing is gathering demand. Simulate another day to generate more views, visits and applications.</p>
+      <article class="detail-panel lifecycle-panel lifecycle-waiting">
+        <h3>Eye · Advertisement live</h3>
+        <p>Your listing is gathering demand. First applications are expected after more views and visits.</p>
         <div class="item-meta">
           <span>${advertisement.views} views</span><span>${advertisement.visits} visits</span><span>0 applications</span>
         </div>
@@ -977,8 +986,8 @@ function renderLifecyclePanel(property) {
   if (stage.stage === "advertising" && advertisement?.applications.length) {
     const offers = getTenantOffers(property).filter((offer) => advertisement.applications.includes(offer.id));
     return `
-      <article class="detail-panel lifecycle-panel">
-        <h3>Applications waiting</h3>
+      <article class="detail-panel lifecycle-panel lifecycle-applications">
+        <h3>Mail · Applications waiting</h3>
         <p>${advertisement.views} views / ${advertisement.visits} visits / ${offers.length} applications. Each applicant has a story, but their deeper traits will reveal themselves over time.</p>
         <div class="offer-list">
           ${offers.map((offer) => `
@@ -1242,22 +1251,9 @@ function createPropertyCard(property, mode) {
     const infoButton = document.createElement("button");
     infoButton.className = "primary-action";
     infoButton.type = "button";
-    infoButton.textContent = "Info";
+    infoButton.textContent = "View property";
     infoButton.addEventListener("click", () => openPropertyInfo(property.id));
     actions.appendChild(infoButton);
-
-    const mapButton = document.createElement("button");
-    mapButton.className = "secondary-action";
-    mapButton.type = "button";
-    mapButton.textContent = "Map";
-    mapButton.addEventListener("click", () => {
-      state.selectedId = property.id;
-      state.mapSheetOpen = true;
-      saveState();
-      showScreen("map");
-      render();
-    });
-    actions.appendChild(mapButton);
     card.appendChild(actions);
   }
 

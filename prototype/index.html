@@ -80,11 +80,16 @@
           <h2>Portfolio</h2>
         </header>
         <section class="company-dashboard" id="portfolioDashboard" aria-label="Company dashboard"></section>
-        <section class="portfolio-summary" aria-label="Rent summary">
+        <section class="portfolio-summary rent-collection-card" aria-label="Rent summary">
+          <div class="rent-card-copy">
+            <span id="rentKicker">Next rent</span>
+            <strong id="rentReadyValue">0 PLN</strong>
+            <p id="rentSource">No occupied properties yet</p>
+          </div>
           <button class="primary-action compact-rent-action" id="collectRentButton" type="button">Collect rent</button>
           <div class="rent-breakdown">
-            <span><strong id="homeRentValue">0 PLN</strong> home rent waiting</span>
-            <span><strong id="shopRentValue">0 PLN</strong> shop rent waiting</span>
+            <span><strong id="homeRentValue">0 PLN</strong> homes</span>
+            <span><strong id="shopRentValue">0 PLN</strong> businesses</span>
           </div>
         </section>
         <section class="portfolio-focus" id="portfolioFocus" aria-label="Today in your portfolio"></section>

@@ -1,22 +1,43 @@
 :root {
   color-scheme: light;
   --ink: #15212d;
-  --muted: #6d7d8d;
+  --muted: #596a79;
+  --tertiary: #7d8b97;
   --line: #dce4ea;
   --paper: #edf3f7;
   --panel: #ffffff;
   --panel-dark: #172b4d;
-  --brand: #2364d2;
-  --brand-strong: #174da5;
-  --money: #0f9f6e;
-  --accent: #e66b2d;
-  --urgent: #d94b5f;
-  --gold: #c99931;
+  --action-primary: #245ec7;
+  --action-primary-hover: #1b4faf;
+  --action-primary-soft: #eaf1ff;
+  --income: #07875f;
+  --income-strong: #046c4c;
+  --income-soft: #e5f6ef;
+  --waiting: #b66709;
+  --waiting-strong: #8b4d05;
+  --waiting-soft: #fff3da;
+  --maintenance: #c45516;
+  --maintenance-strong: #9a3e0d;
+  --maintenance-soft: #fff0e5;
+  --danger: #c93f55;
+  --danger-strong: #a82e43;
+  --danger-soft: #fdecef;
+  --prestige: #a97816;
+  --prestige-soft: #fff8e4;
+  --disabled-bg: #eef2f5;
+  --disabled-border: #d9e0e6;
+  --disabled-text: #8795a3;
+  --brand: var(--action-primary);
+  --brand-strong: var(--action-primary-hover);
+  --money: var(--income);
+  --accent: var(--maintenance);
+  --urgent: var(--danger);
+  --gold: var(--prestige);
   --influence: #7c5ce5;
-  --green-soft: #e6f7ef;
-  --blue-soft: #e8f0ff;
-  --orange-soft: #fff2e8;
-  --red-soft: #fdecef;
+  --green-soft: var(--income-soft);
+  --blue-soft: var(--action-primary-soft);
+  --orange-soft: var(--maintenance-soft);
+  --red-soft: var(--danger-soft);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -434,7 +455,7 @@ h2 {
 .primary-action,
 .secondary-action {
   width: 100%;
-  min-height: 46px;
+  min-height: 44px;
   border: 0;
   border-radius: 8px;
   font-weight: 800;
@@ -443,35 +464,44 @@ h2 {
 
 .primary-action {
   color: white;
-  background: var(--brand);
+  min-height: 52px;
+  border-radius: 12px;
+  padding: 0 18px;
+  font-size: 15px;
+  background: var(--action-primary);
 }
 
+.primary-action:hover { background: var(--action-primary-hover); }
+
 .primary-action:disabled {
-  background: #aab4b4;
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  border: 1px solid var(--disabled-border);
   cursor: not-allowed;
 }
 
 .secondary-action {
   background: var(--panel);
   border: 1px solid var(--line);
-  color: var(--brand-strong);
+  color: var(--action-primary-hover);
 }
 
 .danger-action {
   width: 100%;
-  min-height: 46px;
+  min-height: 52px;
+  border-radius: 12px;
   border: 0;
   border-radius: 8px;
   font-weight: 800;
   cursor: pointer;
   color: white;
-  background: var(--urgent);
+  background: var(--danger);
 }
 
 .compact-action {
   width: auto;
   min-width: 74px;
-  min-height: 38px;
+  min-height: 44px;
   padding: 0 12px;
 }
 
@@ -584,7 +614,7 @@ h2 {
 .compact-actions .primary-action,
 .compact-actions .secondary-action,
 .compact-actions .danger-action {
-  min-height: 34px;
+  min-height: 44px;
   margin-top: 0;
   font-size: 12px;
 }
@@ -621,8 +651,8 @@ h2 {
 .dashboard-metrics span { color: var(--muted); font-size: 9px; line-height: 1.15; }
 .dashboard-metrics strong { overflow: hidden; color: var(--ink); font-size: 12px; line-height: 1.25; text-overflow: ellipsis; white-space: nowrap; margin-top: 3px; }
 
-.info-button, .metric-info { width: 22px; height: 22px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: white; color: var(--brand-strong); cursor: pointer; font-size: 12px; font-weight: 900; font-family: inherit; }
-.metric-info { position: absolute; top: 4px; right: 4px; width: 15px; height: 15px; font-size: 9px; }
+.info-button, .metric-info { width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; background: white; color: var(--brand-strong); cursor: pointer; font-size: 13px; font-weight: 900; font-family: inherit; }
+.metric-info { position: absolute; top: 2px; right: 2px; width: 28px; height: 28px; font-size: 11px; }
 
 .dashboard-objective { display: grid; gap: 2px; width: 100%; padding: 10px; border: 1px solid rgba(15, 159, 110, 0.35); border-radius: 8px; background: var(--green-soft); color: var(--ink); text-align: left; cursor: pointer; }
 .dashboard-objective strong { color: var(--money); font-size: 14px; }
@@ -713,20 +743,20 @@ button.focus-card {
 .focus-card.calm > span { background: var(--green-soft); color: var(--money); }
 
 .compact-rent-action {
-  min-height: 38px;
-  font-size: 12px;
+  min-height: 52px;
+  font-size: 14px;
 }
 
 .compact-rent-action:disabled {
-  border-color: var(--line);
-  background: #eef3f7;
-  color: var(--muted);
-  cursor: default;
+  border-color: var(--disabled-border);
+  background: var(--disabled-bg);
+  color: var(--disabled-text);
+  cursor: pointer;
   box-shadow: none;
 }
 
 .compact-rent-action.rent-ready {
-  background: linear-gradient(180deg, #18bd81, var(--money));
+  background: var(--income);
   box-shadow: 0 8px 18px rgba(15, 159, 110, 0.22);
 }
 
@@ -741,6 +771,15 @@ button.focus-card {
 .rent-breakdown strong {
   color: var(--ink);
 }
+
+.rent-collection-card { grid-template-columns: 1fr; align-items: stretch; }
+.rent-card-copy { display: grid; gap: 3px; }
+.rent-card-copy > span { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; }
+.rent-card-copy > strong { color: var(--ink); font-size: 23px; line-height: 1.1; }
+.rent-card-copy p { margin: 0; color: var(--muted); font-size: 13px; }
+.rent-ready-card { border-color: rgba(7, 135, 95, 0.36); background: var(--income-soft); }
+.rent-ready-card .rent-card-copy > strong { color: var(--income-strong); }
+.rent-waiting-card { background: #f8fafb; }
 
 .portfolio-group {
   display: grid;
@@ -875,6 +914,14 @@ button.focus-card {
   border-color: rgba(35, 100, 210, 0.28);
   background: #f8fbff;
 }
+
+.lifecycle-panel.lifecycle-waiting { border-color: rgba(182, 103, 9, 0.38); background: var(--waiting-soft); }
+.lifecycle-panel.lifecycle-waiting h3 { color: var(--waiting-strong); }
+.lifecycle-panel.lifecycle-maintenance { border-color: rgba(196, 85, 22, 0.4); background: var(--maintenance-soft); }
+.lifecycle-panel.lifecycle-maintenance h3 { color: var(--maintenance-strong); }
+.lifecycle-panel.lifecycle-applications { border-color: rgba(36, 94, 199, 0.36); background: var(--action-primary-soft); }
+.lifecycle-track span.active { background: #f6dca6; color: var(--waiting-strong); }
+.lifecycle-applications .lifecycle-track span.active { background: var(--action-primary-soft); color: var(--action-primary-hover); }
 
 .auction-card {
   display: grid;
@@ -1109,7 +1156,7 @@ button.focus-card {
 }
 
 .tab {
-  min-height: 50px;
+  min-height: 56px;
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -1125,7 +1172,8 @@ button.focus-card {
 }
 
 .tab:disabled {
-  color: #aeb9c4;
+  color: var(--disabled-text);
+  opacity: 1;
   cursor: not-allowed;
 }
 
