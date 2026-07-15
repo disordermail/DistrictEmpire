@@ -213,6 +213,7 @@ sheetCloseButton.addEventListener("click", () => {
   render();
 });
 document.querySelector("#propertyBackButton").addEventListener("click", () => showScreen("portfolio"));
+document.querySelector("#shopBackButton").addEventListener("click", () => showScreen("ranking"));
 document.querySelector("#dailyRewardButton").addEventListener("click", claimDailyReward);
 document.querySelector("#grantCashButton").addEventListener("click", () => {
   state.cash += 10000;
@@ -1097,6 +1098,15 @@ function renderRanking() {
   ].sort((a, b) => b.score - a.score);
 
   rankingList.innerHTML = "";
+  const developerTools = document.createElement("article");
+  developerTools.className = "item-card developer-tools-card";
+  developerTools.innerHTML = `
+    <header><h3>Developer tools</h3><strong>Offline</strong></header>
+    <p>Test daily progression, rewards, and a fresh tutorial without changing the main navigation.</p>
+    <button class="secondary-action" type="button">Open tools</button>
+  `;
+  developerTools.querySelector("button").addEventListener("click", () => showScreen("shop"));
+  rankingList.appendChild(developerTools);
   rows.forEach((row, index) => {
     const card = document.createElement("article");
     card.className = "item-card";
