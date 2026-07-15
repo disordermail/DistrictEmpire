@@ -1,0 +1,19 @@
+{
+  "name": "DistrictEmpire.Tests",
+  "rootNamespace": "DistrictEmpire.Tests",
+  "references": [
+    "DistrictEmpire.Domain",
+    "DistrictEmpire.Application"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,13 @@
+{
+  "country_code": "PL",
+  "source_locale": "pl-PL",
+  "currency_code": "PLN",
+  "version": "0.1.0",
+  "cities": [
+    {
+      "id": "warsaw",
+      "localization_key": "city.warsaw.name",
+      "market_tiers": 5
+    }
+  ]
+}

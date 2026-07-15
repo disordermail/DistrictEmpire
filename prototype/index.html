@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>District Empire Offline MVP</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell" aria-label="District Empire offline MVP">
+      <section class="status-bar">
+        <div>
+          <p class="eyebrow">Warszawa · Offline MVP</p>
+          <h1>District Empire</h1>
+        </div>
+        <div class="level-badge" aria-label="Player level">
+          <span>LVL</span>
+          <strong id="playerLevelValue">1</strong>
+        </div>
+      </section>
+
+      <section class="wallet-strip" aria-label="Player status">
+        <article>
+          <span>Cash</span>
+          <strong id="cashValue">0 PLN</strong>
+        </article>
+        <article>
+          <span>Rent/day</span>
+          <strong id="rentValue">0 PLN</strong>
+        </article>
+        <article>
+          <span>Buildings</span>
+          <strong id="ownedValue">0</strong>
+        </article>
+        <article>
+          <span>Influence</span>
+          <strong id="influenceValue">0</strong>
+        </article>
+      </section>
+
+      <section class="screen active" id="screen-map" aria-labelledby="tab-map">
+        <section class="mission-strip" id="missionStrip" aria-label="Active goals"></section>
+        <section class="first-hour-panel" id="firstHourPanel" aria-label="First hour progress"></section>
+        <div class="map-stage" id="mapStage" aria-label="City map"></div>
+        <section class="activity-feed" id="activityFeed" aria-label="City activity"></section>
+        <aside class="bottom-sheet" id="buildingSheet" aria-live="polite">
+          <p class="eyebrow" id="sheetDistrict">Select a building</p>
+          <div class="building-emblem" id="sheetEmblem" aria-hidden="true">⌂</div>
+          <h2 id="sheetTitle">Tap a property on the map</h2>
+          <p id="sheetDescription">Buy a starter property, collect rent, and grow your portfolio.</p>
+          <nav class="sheet-tabs" aria-label="Property sections">
+            <button type="button" data-sheet-tab="overview" class="active">Overview</button>
+            <button type="button" data-sheet-tab="rent">Rent</button>
+            <button type="button" data-sheet-tab="repairs">Repairs</button>
+          </nav>
+          <div class="sheet-stats">
+            <span id="sheetTier">Tier -</span>
+            <span id="sheetLevel">Level -</span>
+            <span id="sheetRent">Rent -</span>
+            <span id="sheetPrice">Price -</span>
+          </div>
+          <div class="sheet-insights" id="sheetInsights"></div>
+          <div class="sheet-panel" id="sheetPanel"></div>
+          <button class="primary-action" id="sheetAction" type="button" disabled>Select property</button>
+        </aside>
+      </section>
+
+      <section class="screen" id="screen-market" aria-labelledby="tab-market">
+        <header class="screen-header">
+          <p class="eyebrow">Fresh listings</p>
+          <h2>Market</h2>
+        </header>
+        <div class="list" id="marketList"></div>
+      </section>
+
+      <section class="screen" id="screen-portfolio" aria-labelledby="tab-portfolio">
+        <header class="screen-header">
+          <p class="eyebrow">Owned assets</p>
+          <h2>Portfolio</h2>
+        </header>
+        <section class="portfolio-summary" aria-label="Rent summary">
+          <button class="primary-action compact-rent-action" id="collectRentButton" type="button">Collect rent</button>
+          <div class="rent-breakdown">
+            <span><strong id="homeRentValue">0 PLN</strong> home rent waiting</span>
+            <span><strong id="shopRentValue">0 PLN</strong> shop rent waiting</span>
+          </div>
+        </section>
+        <div class="list" id="portfolioList"></div>
+      </section>
+
+      <section class="screen" id="screen-property" aria-labelledby="propertyInfoTitle">
+        <header class="screen-header split-header">
+          <div>
+            <p class="eyebrow" id="propertyInfoDistrict">Building</p>
+            <h2 id="propertyInfoTitle">Property info</h2>
+          </div>
+          <button class="secondary-action compact-action" id="propertyBackButton" type="button">Back</button>
+        </header>
+        <div id="propertyInfoView"></div>
+      </section>
+
+      <section class="screen" id="screen-issues" aria-labelledby="tab-issues">
+        <header class="screen-header">
+          <p class="eyebrow">Operations</p>
+          <h2>Issues</h2>
+        </header>
+        <div class="list" id="issuesList"></div>
+      </section>
+
+      <section class="screen" id="screen-ranking" aria-labelledby="tab-ranking">
+        <header class="screen-header">
+          <p class="eyebrow">Company</p>
+          <h2>Reputation</h2>
+        </header>
+        <div class="list" id="rankingList"></div>
+      </section>
+
+      <section class="screen" id="screen-shop" aria-labelledby="tab-shop">
+        <header class="screen-header">
+          <p class="eyebrow">Test economy</p>
+          <h2>Shop</h2>
+        </header>
+        <div class="shop-grid">
+          <button class="primary-action" id="dailyRewardButton" type="button">Claim daily reward</button>
+          <button class="secondary-action" id="grantCashButton" type="button">Grant 10,000 PLN</button>
+          <button class="secondary-action" id="grantInfluenceButton" type="button">Grant 25 influence</button>
+          <button class="secondary-action" id="simulateDayButton" type="button">Simulate day</button>
+          <button class="danger-action" id="resetButton" type="button">Reset progress</button>
+        </div>
+      </section>
+
+      <nav class="tab-bar" aria-label="Main navigation">
+        <button class="tab" id="tab-market" type="button" data-screen="market">Market</button>
+        <button class="tab" id="tab-portfolio" type="button" data-screen="portfolio">Portfolio<span class="nav-badge alert-badge" id="portfolioBadge" hidden>!</span></button>
+        <button class="tab map-tab active" id="tab-map" type="button" data-screen="map" aria-label="Map">⌖<span>Map</span></button>
+        <button class="tab" id="tab-issues" type="button" data-screen="issues">Issues<span class="nav-badge" id="issuesBadge" hidden>0</span></button>
+        <button class="tab" id="tab-ranking" type="button" data-screen="ranking">Company</button>
+        <button class="tab" id="tab-shop" type="button" data-screen="shop">Shop</button>
+      </nav>
+      <aside class="toast" id="toast" hidden></aside>
+      <aside class="ceremony" id="ceremony" hidden></aside>
+      <section class="modal-layer" id="levelModal" hidden>
+        <article class="level-modal-card">
+          <p class="eyebrow">Congratulations</p>
+          <h2>You leveled up!</h2>
+          <div class="level-medal" id="levelModalValue">2</div>
+          <p id="levelModalText">New investor level reached.</p>
+          <button class="primary-action" id="claimLevelButton" type="button">Claim</button>
+        </article>
+      </section>
+      <section class="modal-layer" id="welcomeModal" hidden>
+        <article class="welcome-card">
+          <p class="eyebrow">Welcome to Warsaw</p>
+          <h2>Your first property empire starts here</h2>
+          <p>Start with capital, inspect the map, buy a starter apartment, renovate it, find a tenant, and collect your first rent.</p>
+          <div class="welcome-rewards">
+            <span>Starter capital: <strong>50,000 PLN</strong></span>
+            <span>City: <strong>Warsaw</strong></span>
+          </div>
+          <button class="primary-action" id="startOnboardingButton" type="button">Start on map</button>
+        </article>
+      </section>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>

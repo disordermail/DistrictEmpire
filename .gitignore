@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Unity
+unity/[Ll]ibrary/
+unity/[Tt]emp/
+unity/[Oo]bj/
+unity/[Bb]uild/
+unity/[Bb]uilds/
+unity/[Ll]ogs/
+unity/[Uu]ser[Ss]ettings/
+unity/MemoryCaptures/
+unity/*.csproj
+unity/*.sln
+unity/*.user
+unity/*.pidb
+unity/*.booproj
+unity/*.svd
+unity/*.pdb
+unity/*.mdb
+unity/*.opendb
+unity/*.VC.db
+
+# Backend
+backend/.env
+backend/.env.*
+backend/node_modules/
+
+# Generated content
+content/generated/
+
+# Local distribution archives
+Archive.zip

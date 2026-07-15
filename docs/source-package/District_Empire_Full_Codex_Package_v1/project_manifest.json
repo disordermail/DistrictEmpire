@@ -1,0 +1,18 @@
+{
+  "project": "District Empire",
+  "version": "full-docs-v1",
+  "source_locale": "pl-PL",
+  "first_country": "PL",
+  "country_release_model": "separate country launches",
+  "platforms": [
+    "iOS",
+    "Android"
+  ],
+  "orientation": "portrait",
+  "style": "2D app-like",
+  "primary_view": "map",
+  "engine": "Unity 6 LTS",
+  "data_driven": true,
+  "market_tiers": 20,
+  "retention_months": 24
+}

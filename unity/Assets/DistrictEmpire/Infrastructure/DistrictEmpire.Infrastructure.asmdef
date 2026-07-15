@@ -1,0 +1,17 @@
+{
+  "name": "DistrictEmpire.Infrastructure",
+  "rootNamespace": "DistrictEmpire.Infrastructure",
+  "references": [
+    "DistrictEmpire.Domain",
+    "DistrictEmpire.Application"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,4 @@
+project_id = "district-empire"
+
+[functions.v1]
+verify_jwt = true
