@@ -120,22 +120,36 @@ const dreamProperty = {
 };
 
 const defaultState = {
-  cash: 50000,
+  cash: 32000,
   influence: 35,
   xp: 0,
   playerLevel: 1,
-  owned: [],
-  conditions: {},
+  owned: ["mokotow-starter"],
+  conditions: { "mokotow-starter": 72 },
   propertyLevels: {},
-  tenants: {},
-  propertyStages: {},
+  tenants: {
+    "mokotow-starter": {
+      id: "maria-teacher",
+      name: "Maria Kowalska",
+      category: "professional",
+      label: "Teacher",
+      risk: "low",
+      rent: 620,
+      startedDay: 0,
+      story: "Maria teaches nearby and has just settled into the neighborhood.",
+      leaseDays: 1,
+      relationship: 62,
+      paymentHistory: "First payment ready"
+    }
+  },
+  propertyStages: { "mokotow-starter": { stage: "occupied" } },
   advertisements: {},
   tenantMemories: {},
   latePayments: {},
   evictionCases: {},
   listedForSale: {},
   rentAccrued: {
-    residential: 0,
+    residential: 620,
     commercial: 0
   },
   rentAccruedMigrated: true,
@@ -189,6 +203,7 @@ const missionStrip = document.querySelector("#missionStrip");
 const firstHourPanel = document.querySelector("#firstHourPanel");
 const activityFeed = document.querySelector("#activityFeed");
 const portfolioFocus = document.querySelector("#portfolioFocus");
+const portfolioDashboard = document.querySelector("#portfolioDashboard");
 const toast = document.querySelector("#toast");
 const ceremony = document.querySelector("#ceremony");
 const levelModal = document.querySelector("#levelModal");
@@ -198,6 +213,7 @@ const welcomeModal = document.querySelector("#welcomeModal");
 const tutorialChip = document.querySelector("#tutorialChip");
 const portfolioBadge = document.querySelector("#portfolioBadge");
 const issuesBadge = document.querySelector("#issuesBadge");
+const infoPopover = document.querySelector("#infoPopover");
 
 document.querySelector("#resetButton").addEventListener("click", () => {
   state = createDefaultState();
@@ -237,10 +253,16 @@ document.querySelector("#claimLevelButton").addEventListener("click", () => {
 });
 document.querySelector("#startOnboardingButton").addEventListener("click", () => {
   state.onboardingComplete = true;
-  advanceTutorial("inspect");
+  advanceTutorial("collect");
   trackMicroWin("welcome");
   saveState();
   render();
+  showScreen("portfolio");
+});
+
+document.addEventListener("click", (event) => {
+  const trigger = event.target.closest("[data-info]");
+  if (trigger) showInfo(trigger.dataset.info);
 });
 
 tabs.forEach((tab) => {
@@ -408,8 +430,9 @@ function renderTutorialDirector() {
 
 function getTutorialGuide(step) {
   return {
-    inspect: { title: "Inspect your first opportunity", detail: "Tap the pulsing starter property on the map.", cta: "Show me" },
-    buy: { title: "Buy the starter apartment", detail: "Review the price and begin notary paperwork.", cta: "Open property" },
+    collect: { title: "First rent is ready", detail: "Maria's payment is waiting in your Portfolio.", cta: "Collect rent" },
+    repair: { title: "A small repair needs you", detail: "Maria reported a broken light. Keep your first tenant happy.", cta: "Review repair" },
+    expand: { title: "Ready to expand?", detail: "One affordable apartment is highlighted on the map.", cta: "Buy another property" },
     notary: { title: "Paperwork is in progress", detail: "In this prototype, advance the day to receive the notary handover.", cta: "Advance day" },
     handover: { title: "Keys are ready", detail: "Choose whether to renovate or advertise first.", cta: "View property" },
     listing: { title: "Find your first tenant", detail: "Publish a listing to start attracting people.", cta: "Create listing" },
@@ -424,14 +447,14 @@ function getTutorialGuide(step) {
 }
 
 function handleTutorialAction(step) {
-  const starterId = "mokotow-starter";
-  if (step === "inspect") {
-    state.selectedId = starterId;
-    state.mapSheetOpen = true;
-    showScreen("map");
-  } else if (step === "buy") {
-    state.selectedId = starterId;
-    state.mapSheetOpen = true;
+  const expansionId = "praga-yard";
+  if (step === "collect") {
+    showScreen("portfolio");
+  } else if (step === "repair") {
+    showScreen("issues");
+  } else if (step === "expand") {
+    state.selectedId = expansionId;
+    state.mapSheetOpen = false;
     showScreen("map");
   } else if (["notary", "applications", "rent"].includes(step)) {
     simulateDay();
@@ -440,9 +463,7 @@ function handleTutorialAction(step) {
     showScreen("market");
     advanceTutorial("complete");
   } else if (["handover", "listing", "tenant", "lease"].includes(step)) {
-    openPropertyInfo(starterId);
-  } else if (["applications", "rent"].includes(step)) {
-    showScreen("portfolio");
+    openPropertyInfo(expansionId);
   } else if (step === "tasks") {
     showScreen("issues");
   } else if (step === "ranking") {
@@ -451,6 +472,20 @@ function handleTutorialAction(step) {
   }
   saveState();
   render();
+}
+
+function showInfo(topic) {
+  const messages = {
+    rent: "Rent is collected from occupied properties. Happy, reliable tenants keep payments predictable.",
+    applications: "Applications arrive as an advertisement earns views and visits. Compare the story, terms and offer before you sign.",
+    repairs: "Small repairs protect tenant happiness and keep your property in good condition.",
+    notary: "A purchase needs one simulated day of paperwork before you can prepare the property.",
+    unlocks: "Locked systems stay visible so you always know which milestone opens the next opportunity."
+  };
+  infoPopover.textContent = messages[topic] || "More details unlock as your company grows.";
+  infoPopover.hidden = false;
+  window.clearTimeout(showInfo.timeout);
+  showInfo.timeout = window.setTimeout(() => { infoPopover.hidden = true; }, 4200);
 }
 
 function advanceTutorial(nextStep) {
@@ -476,7 +511,7 @@ function renderNavigationGates() {
   const hasLease = Object.keys(state.tenants).length > 0;
 
   marketTab.disabled = tutorialActive && !["notary", "handover", "listing", "applications", "tenant", "lease", "rent", "tasks", "ranking", "dream"].includes(state.tutorialState.currentStep);
-  tasksTab.disabled = tutorialActive && !["tasks", "ranking", "dream"].includes(state.tutorialState.currentStep);
+  tasksTab.disabled = tutorialActive && !["repair", "tasks", "ranking", "dream"].includes(state.tutorialState.currentStep);
   companyTab.disabled = tutorialActive && !hasLease;
 }
 
@@ -501,7 +536,8 @@ function renderMap() {
     button.className = [
       "property-pin",
       listed ? "listed" : state.owned.includes(property.id) ? "owned" : "available",
-      state.selectedId === property.id ? "selected" : ""
+      state.selectedId === property.id ? "selected" : "",
+      state.tutorialState.currentStep === "expand" && property.id === "praga-yard" ? "tutorial-target" : ""
     ].join(" ");
     button.style.left = `${property.x}%`;
     button.style.top = `${property.y}%`;
@@ -511,9 +547,6 @@ function renderMap() {
       state.selectedId = property.id;
       state.sheetTab = "overview";
       state.mapSheetOpen = true;
-      if (state.tutorialState.currentStep === "inspect" && property.id === "mokotow-starter") {
-        advanceTutorial("buy");
-      }
       saveState();
       render();
     });
@@ -681,6 +714,7 @@ function renderPortfolio() {
   const homes = owned.filter((property) => property.useType === "residential");
   const workProperties = owned.filter((property) => property.useType === "commercial");
 
+  renderPortfolioDashboard(owned);
   renderPortfolioFocus(owned);
 
   if (!owned.length) {
@@ -692,6 +726,44 @@ function renderPortfolio() {
   portfolioList.innerHTML = "";
   portfolioList.appendChild(createPortfolioGroup("People live here", homes, "No homes owned yet."));
   portfolioList.appendChild(createPortfolioGroup("For work and shops", workProperties, "No work properties owned yet."));
+  portfolioList.appendChild(createUnlockPreview());
+}
+
+function renderPortfolioDashboard(owned) {
+  const applications = Object.values(state.advertisements).reduce((total, ad) => total + (ad.applications?.length || 0), 0);
+  const repairs = owned.filter((property) => property.tier <= 2 && !state.repaired.includes(property.id)).length;
+  const rentReady = getAccruedRentTotal();
+  const guide = getTutorialGuide(state.tutorialState.currentStep);
+  const action = rentReady > 0
+    ? { label: `Collect ${formatMoney(rentReady)}`, detail: "Maria's payment is ready today.", run: collectRent }
+    : repairs > 0
+      ? { label: "Repair property", detail: "A tenant needs a small repair.", run: () => showScreen("issues") }
+      : applications > 0
+        ? { label: "Choose tenant", detail: `${applications} applications need a decision.`, run: () => showScreen("issues") }
+        : { label: "Browse investments", detail: guide?.detail || "Everything is moving. Find the next property for your company.", run: () => showScreen("market") };
+
+  portfolioDashboard.innerHTML = `
+    <div class="dashboard-heading"><div><span>Company dashboard</span><strong>Today at a glance</strong></div><button class="info-button" type="button" data-info="rent" aria-label="How rent works">i</button></div>
+    <div class="dashboard-metrics">
+      <article><span>Income ready</span><strong>${formatMoney(rentReady)}</strong></article>
+      <article><span>Applications</span><strong>${applications}</strong><button class="metric-info" type="button" data-info="applications" aria-label="How applications work">i</button></article>
+      <article><span>Repairs</span><strong>${repairs}</strong><button class="metric-info" type="button" data-info="repairs" aria-label="How repairs work">i</button></article>
+      <article><span>Auction</span><strong>1 day</strong></article>
+    </div>
+    <button class="dashboard-objective" id="dashboardPrimaryAction" type="button"><span>Today's focus</span><strong>${action.label}</strong><em>${action.detail}</em></button>
+  `;
+  portfolioDashboard.querySelector("#dashboardPrimaryAction").addEventListener("click", action.run);
+}
+
+function createUnlockPreview() {
+  const hasLease = Object.values(state.tenants).length > 0;
+  const card = document.createElement("article");
+  card.className = "unlock-preview";
+  card.innerHTML = `
+    <div><span>Next opportunity</span><h3>${hasLease ? "Commercial portfolio" : "Commercial portfolio locked"}</h3><p>${hasLease ? "Your first lease is active. Browse business-ready properties in Invest." : "Sign your first apartment lease to unlock business tenants."}</p></div>
+    <button class="info-button" type="button" data-info="unlocks" aria-label="How unlocks work">i</button>
+  `;
+  return card;
 }
 
 function renderPortfolioFocus(owned) {
@@ -1209,7 +1281,9 @@ function buyProperty(propertyId, priceOverride = null, source = "listing") {
   state.infoPropertyId = propertyId;
   addXp(20);
   trackMicroWin("first-purchase");
-  advanceTutorial("notary");
+  if (["inspect", "buy", "expand"].includes(state.tutorialState.currentStep)) {
+    advanceTutorial("notary");
+  }
   pushToast(`${property.name} reserved. Notary paperwork starts now.`);
   pushCeremony(source === "auction" ? "Auction won · Notary pending" : "Signed · Notary pending");
   saveState();
@@ -1229,7 +1303,9 @@ function repairProperty(propertyId, cost) {
   }
   addXp(8);
   trackMicroWin("first-renovation");
-  if (state.tutorialState.currentStep === "tasks") {
+  if (state.tutorialState.currentStep === "repair") {
+    advanceTutorial("expand");
+  } else if (state.tutorialState.currentStep === "tasks") {
     advanceTutorial("ranking");
   }
   pushToast("Maintenance complete.");
@@ -1313,7 +1389,9 @@ function collectRent() {
   addXp(Math.max(3, state.owned.length * 3));
   if (collectableRent > 0) {
     trackMicroWin("first-rent");
-    if (state.tutorialState.currentStep === "rent") {
+    if (state.tutorialState.currentStep === "collect") {
+      advanceTutorial("repair");
+    } else if (state.tutorialState.currentStep === "rent") {
       advanceTutorial("tasks");
     }
   }
@@ -2195,18 +2273,32 @@ function createDefaultState() {
       completedSteps: [],
       skipped: false
     },
-    owned: [],
-    conditions: {},
+    owned: ["mokotow-starter"],
+    conditions: { "mokotow-starter": 72 },
     propertyLevels: {},
-    tenants: {},
-    propertyStages: {},
+    tenants: {
+      "mokotow-starter": {
+        id: "maria-teacher",
+        name: "Maria Kowalska",
+        category: "professional",
+        label: "Teacher",
+        risk: "low",
+        rent: 620,
+        startedDay: 0,
+        story: "Maria teaches nearby and has just settled into the neighborhood.",
+        leaseDays: 1,
+        relationship: 62,
+        paymentHistory: "First payment ready"
+      }
+    },
+    propertyStages: { "mokotow-starter": { stage: "occupied" } },
     advertisements: {},
     tenantMemories: {},
     latePayments: {},
     evictionCases: {},
     listedForSale: {},
     rentAccrued: {
-      residential: 0,
+      residential: 620,
       commercial: 0
     },
     rentAccruedMigrated: true,

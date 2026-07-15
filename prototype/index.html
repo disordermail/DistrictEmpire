@@ -79,6 +79,7 @@
           <p class="eyebrow">Owned assets</p>
           <h2>Portfolio</h2>
         </header>
+        <section class="company-dashboard" id="portfolioDashboard" aria-label="Company dashboard"></section>
         <section class="portfolio-summary" aria-label="Rent summary">
           <button class="primary-action compact-rent-action" id="collectRentButton" type="button">Collect rent</button>
           <div class="rent-breakdown">
@@ -154,17 +155,18 @@
       </section>
       <section class="modal-layer" id="welcomeModal" hidden>
         <article class="welcome-card">
-          <p class="eyebrow">Welcome to Warsaw</p>
-          <h2>Your first property empire starts here</h2>
-          <p>Start with capital, inspect the map, buy a starter apartment, renovate it, find a tenant, and collect your first rent.</p>
+          <p class="eyebrow">District Empire</p>
+          <h2>Congratulations. You are a landlord.</h2>
+          <p>Yesterday you completed your first investment. Your Old Town apartment is occupied, and Maria's first rent is ready to collect.</p>
           <div class="welcome-rewards">
-            <span>Starter capital: <strong>50,000 PLN</strong></span>
+            <span>First apartment: <strong>Occupied</strong></span>
             <span>City: <strong>Warsaw</strong></span>
           </div>
-          <button class="primary-action" id="startOnboardingButton" type="button">Find my first property</button>
+          <button class="primary-action" id="startOnboardingButton" type="button">Open my portfolio</button>
         </article>
       </section>
       <aside class="tutorial-chip" id="tutorialChip" hidden></aside>
+      <aside class="info-popover" id="infoPopover" hidden role="status"></aside>
     </main>
     <script src="./app.js"></script>
   </body>
