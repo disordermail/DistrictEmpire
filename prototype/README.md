@@ -27,6 +27,9 @@ Then open `http://localhost:8080`.
 - Maintain owned properties to improve condition and rent.
 - Move each purchase through notary paperwork, renovation/preparation, advertising, applications, and an active lease.
 - See a one-line lifecycle status on every portfolio card, including notary, ad demand, applications, occupied, rent due, late payment, and contract cancellation.
+- Use Portfolio as the daily management hub: collect rent, review a short attention queue, then manage compact live-status cards.
+- Browse Invest for ordinary listings and a playable discounted live auction.
+- Receive city activity moments and a small daily momentum reward when advancing the offline day.
 - Publish advertisements that gather views and visits each simulated day before applications arrive.
 - Review applicants with short stories, accept them, counter-offer, or ask for a deposit.
 - Keep tenant memory for lease length, payment history, and relationship level.

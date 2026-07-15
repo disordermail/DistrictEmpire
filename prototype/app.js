@@ -143,6 +143,8 @@ const defaultState = {
   microWins: [],
   onboardingComplete: true,
   dailyRewardClaimedDay: 0,
+  dailyMomentum: [],
+  cityEvents: [],
   streetIssuesResolved: [],
   repaired: [],
   selectedId: "mokotow-starter",
@@ -179,6 +181,7 @@ const propertyInfoView = document.querySelector("#propertyInfoView");
 const missionStrip = document.querySelector("#missionStrip");
 const firstHourPanel = document.querySelector("#firstHourPanel");
 const activityFeed = document.querySelector("#activityFeed");
+const portfolioFocus = document.querySelector("#portfolioFocus");
 const toast = document.querySelector("#toast");
 const ceremony = document.querySelector("#ceremony");
 const levelModal = document.querySelector("#levelModal");
@@ -373,11 +376,8 @@ function renderActivityFeed() {
   const district = selected?.district || "Warsaw";
   const tenant = selected ? getTenant(selected.id) : null;
   const watching = selected ? 2 + selected.tier + getPropertyLevel(selected.id) : 3;
-  const feed = [
-    `${watching} investors watching ${selected ? selected.name : "Warsaw listings"}`,
-    tenant ? `${tenant.name} pays ${formatMoney(tenant.rent)} / day` : `Anna bought a pharmacy in ${district} 2 min ago`,
-    `${district} neighborhood score ${selected ? getNeighborhoodScore(selected) : 74}/100`
-  ];
+  const cityMoment = state.cityEvents[0] || `${district}: two investors are watching ${selected ? selected.name : "new listings"}`;
+  const feed = [cityMoment, tenant ? `${tenant.name} is settled in ${selected.name}` : `${watching} investors are watching ${selected ? selected.name : "Warsaw listings"}`];
 
   activityFeed.innerHTML = feed.map((item) => `<span>${item}</span>`).join("");
 }
@@ -504,9 +504,12 @@ function renderMarket() {
   const playerListings = properties.filter((property) => state.owned.includes(property.id) && state.listedForSale[property.id]);
   const listings = [...playerListings, ...available];
 
-  marketList.innerHTML = listings.length
+  marketList.innerHTML = "";
+  marketList.appendChild(createAuctionCard());
+  marketList.insertAdjacentHTML("beforeend", `<p class="list-divider">Open opportunities</p>`);
+  marketList.insertAdjacentHTML("beforeend", listings.length
     ? ""
-    : `<article class="item-card"><h3>No listings left</h3><p>You own every MVP property in Warsaw and have no active sale listings.</p></article>`;
+    : `<article class="item-card"><h3>No listings left</h3><p>You own every MVP property in Warsaw and have no active sale listings.</p></article>`);
 
   playerListings.forEach((property) => {
     marketList.appendChild(createPropertyCard(property, "player-listing"));
@@ -538,20 +541,59 @@ function createDreamPropertyCard() {
   return card;
 }
 
+function createAuctionCard() {
+  const property = properties.find((item) => !state.owned.includes(item.id));
+  const card = document.createElement("article");
+
+  if (!property) {
+    card.className = "auction-card quiet";
+    card.innerHTML = `<span class="auction-kicker">LIVE AUCTION</span><h3>New auctions unlock with the next city tier</h3><p>Keep building your reputation to draw premium sellers into Warsaw.</p>`;
+    return card;
+  }
+
+  const bid = Math.round(property.price * 0.88 / 500) * 500;
+  card.className = "auction-card";
+  card.innerHTML = `
+    <div><span class="auction-kicker">LIVE AUCTION · 1 day left</span><h3>${property.icon} ${property.name}</h3><p>${property.district} · ${property.category}</p></div>
+    <div class="auction-value"><span>Opening bid</span><strong>${formatMoney(bid)}</strong></div>
+    <button class="primary-action" type="button"${state.cash < bid ? " disabled" : ""}>Place bid</button>
+  `;
+  card.querySelector("button")?.addEventListener("click", () => buyProperty(property.id, bid, "auction"));
+  return card;
+}
+
 function renderPortfolio() {
   const portfolioList = document.querySelector("#portfolioList");
   const owned = properties.filter((property) => state.owned.includes(property.id));
   const homes = owned.filter((property) => property.useType === "residential");
   const workProperties = owned.filter((property) => property.useType === "commercial");
 
+  renderPortfolioFocus(owned);
+
   if (!owned.length) {
-    portfolioList.innerHTML = `<article class="item-card"><h3>No buildings yet</h3><p>Buy your first property from the map or market.</p></article>`;
+    portfolioList.innerHTML = `<article class="item-card empty-state"><div class="empty-state-icon">⌂</div><h3>Your first building is waiting</h3><p>Start on the map or browse Invest for a property that fits your capital.</p><button class="primary-action" id="emptyInvestButton" type="button">Browse Invest</button></article>`;
+    document.querySelector("#emptyInvestButton")?.addEventListener("click", () => showScreen("market"));
     return;
   }
 
   portfolioList.innerHTML = "";
   portfolioList.appendChild(createPortfolioGroup("People live here", homes, "No homes owned yet."));
   portfolioList.appendChild(createPortfolioGroup("For work and shops", workProperties, "No work properties owned yet."));
+}
+
+function renderPortfolioFocus(owned) {
+  const tasks = getTodayTasks(owned);
+  portfolioFocus.innerHTML = `
+    <div class="portfolio-focus-header"><span>Today</span><strong>${tasks.length ? `${tasks.length} decision${tasks.length === 1 ? "" : "s"} waiting` : "Everything is moving"}</strong></div>
+    <div class="focus-rail">${tasks.length ? tasks.slice(0, 3).map((task) => `
+      <button class="focus-card ${task.tone}" type="button" data-focus-property="${task.propertyId}">
+        <span>${task.icon}</span><strong>${task.title}</strong><em>${task.detail}</em>
+      </button>`).join("") : `<article class="focus-card calm"><span>✓</span><strong>No urgent actions</strong><em>Use Invest to find your next move.</em></article>`}</div>
+  `;
+
+  portfolioFocus.querySelectorAll("[data-focus-property]").forEach((button) => {
+    button.addEventListener("click", () => openPropertyInfo(button.dataset.focusProperty));
+  });
 }
 
 function renderPropertyInfo() {
@@ -695,7 +737,7 @@ function createPortfolioGroup(title, groupProperties, emptyText) {
     return section;
   }
 
-  groupProperties.forEach((property) => {
+  [...groupProperties].sort((a, b) => getStatusPriority(a) - getStatusPriority(b)).forEach((property) => {
     section.appendChild(createPropertyCard(property, "owned"));
   });
 
@@ -947,20 +989,18 @@ function createPropertyCard(property, mode) {
   const rentalStatus = getPortfolioStatus(property);
   const rentForCard = owned ? getActiveRent(property) : getPotentialRent(property);
   const card = document.createElement("article");
-  card.className = `item-card${listedPrice ? " listed" : ""}${mode === "owned" ? " compact-card" : ""}`;
-  card.innerHTML = `
+  card.className = `item-card${listedPrice ? " listed" : ""}${mode === "owned" ? ` property-status-card ${getStatusTone(property)}` : ""}`;
+  card.innerHTML = mode === "owned" ? `
     <header>
-      <h3>${property.icon} ${property.name}</h3>
-      <strong>${formatMoney(listedPrice || property.price)}</strong>
+      <div class="property-card-title"><span class="property-category-icon">${getCategoryIcon(property)}</span><div><h3>${property.name}</h3><p>${property.district} · ${property.useType === "commercial" ? "Work space" : "Home"}</p></div></div>
+      <strong>${formatMoney(getMonthlyRent(property))}</strong>
     </header>
-    ${mode === "owned" ? "" : `<p>${property.description}</p>`}
-    <div class="item-meta">
-      <span>${property.district}</span>
-      <span>Lvl ${getPropertyLevel(property.id)}</span>
-      <span>${formatMoney(rentForCard)} / day</span>
-      <span>ROI ${getRoi(property)}%</span>
-      ${owned ? `<span>${rentalStatus}</span>` : ""}
-    </div>
+    <div class="property-status-line"><span class="status-dot"></span>${rentalStatus}</div>
+    <div class="property-card-facts"><span>Monthly rent</span><span>${getNextPaymentLabel(property)}</span><span>${getOccupancyLabel(property)}</span></div>
+  ` : `
+    <header><h3>${property.icon} ${property.name}</h3><strong>${formatMoney(listedPrice || property.price)}</strong></header>
+    <p>${property.description}</p>
+    <div class="item-meta"><span>${property.district}</span><span>Lvl ${getPropertyLevel(property.id)}</span><span>${formatMoney(rentForCard)} / day</span><span>ROI ${getRoi(property)}%</span></div>
   `;
 
   if (mode === "buy") {
@@ -1013,14 +1053,15 @@ function createPropertyCard(property, mode) {
   return card;
 }
 
-function buyProperty(propertyId) {
+function buyProperty(propertyId, priceOverride = null, source = "listing") {
   const property = properties.find((item) => item.id === propertyId);
+  const purchasePrice = priceOverride || property?.price;
 
-  if (!property || state.owned.includes(propertyId) || state.cash < property.price) {
+  if (!property || state.owned.includes(propertyId) || state.cash < purchasePrice) {
     return;
   }
 
-  state.cash -= property.price;
+  state.cash -= purchasePrice;
   state.owned.push(propertyId);
   state.conditions[propertyId] = getCondition(propertyId);
   state.propertyLevels[propertyId] = getPropertyLevel(propertyId);
@@ -1030,7 +1071,7 @@ function buyProperty(propertyId) {
   addXp(20);
   trackMicroWin("first-purchase");
   pushToast(`${property.name} reserved. Notary paperwork starts now.`);
-  pushCeremony("Signed · Notary pending");
+  pushCeremony(source === "auction" ? "Auction won · Notary pending" : "Signed · Notary pending");
   saveState();
   render();
 }
@@ -1140,6 +1181,8 @@ function simulateDay() {
   processPropertyLifecycle();
   processEvictionDays();
   const accrued = accrueDailyRent();
+  addDailyCityMoment();
+  awardDailyMomentum();
   pushToast(accrued > 0 ? `New day: ${formatMoney(accrued)} rent is waiting.` : "New day simulated. Check your property lifecycle.");
   saveState();
   render();
@@ -1559,6 +1602,105 @@ function getIssueCount() {
   return needsRepair + streetIssueCount + evictionActions + applications + latePayments;
 }
 
+function getTodayTasks(ownedProperties = properties.filter((property) => state.owned.includes(property.id))) {
+  return ownedProperties.flatMap((property) => {
+    const stage = getPropertyStage(property.id);
+    const tenant = getTenant(property.id);
+    const advertisement = getAdvertisement(property.id);
+
+    if (state.latePayments[property.id]) {
+      return [{ propertyId: property.id, icon: "!", tone: "urgent", title: "Late payment", detail: `${property.name} needs follow-up` }];
+    }
+    if (getEvictionCase(property.id)) {
+      return [{ propertyId: property.id, icon: "!", tone: "urgent", title: "Tenant departure", detail: `${property.name} is in cancellation` }];
+    }
+    if (advertisement?.applications?.length) {
+      return [{ propertyId: property.id, icon: "✦", tone: "attention", title: "${advertisement.applications.length} applications", detail: property.name }];
+    }
+    if (stage.stage === "ready-renovation") {
+      return [{ propertyId: property.id, icon: "⌂", tone: "attention", title: "Prepare property", detail: `${property.name} is ready` }];
+    }
+    if (stage.stage === "ready-advertise" || stage.stage === "vacant") {
+      return [{ propertyId: property.id, icon: "⌁", tone: "attention", title: "Find a tenant", detail: property.name }];
+    }
+    if (tenant && !getActiveRent(property) && !state.listedForSale[property.id]) {
+      return [{ propertyId: property.id, icon: "•", tone: "calm", title: "Rent due", detail: `${property.name} is waiting` }];
+    }
+    return [];
+  });
+}
+
+function getCategoryIcon(property) {
+  if (property.useType === "commercial") {
+    return "▦";
+  }
+  return "⌂";
+}
+
+function getStatusTone(property) {
+  const stage = getPropertyStage(property.id);
+  if (state.latePayments[property.id] || getEvictionCase(property.id)) {
+    return "urgent";
+  }
+  if (getAdvertisement(property.id)?.applications?.length || ["ready-renovation", "ready-advertise", "vacant"].includes(stage.stage)) {
+    return "attention";
+  }
+  return "calm";
+}
+
+function getStatusPriority(property) {
+  const tone = getStatusTone(property);
+  return tone === "urgent" ? 0 : tone === "attention" ? 1 : 2;
+}
+
+function getMonthlyRent(property) {
+  const rent = getActiveRent(property) || getPotentialRent(property);
+  return formatMoney(rent * 30);
+}
+
+function getNextPaymentLabel(property) {
+  if (state.latePayments[property.id]) {
+    return "Payment late";
+  }
+  if (getTenant(property.id)) {
+    return getAccruedRentTotal() > 0 ? "Collect today" : "Due tomorrow";
+  }
+  return "No lease";
+}
+
+function getOccupancyLabel(property) {
+  const stage = getPropertyStage(property.id);
+  if (getTenant(property.id)) {
+    return "Occupied";
+  }
+  if (stage.stage === "notary") {
+    return `Notary ${stage.daysRemaining}d`;
+  }
+  return stage.stage === "advertising" ? "Advertising" : "Vacant";
+}
+
+function addDailyCityMoment() {
+  const available = properties.filter((property) => !state.owned.includes(property.id));
+  const subject = available[state.day % Math.max(available.length, 1)] || properties[0];
+  const moments = [
+    `Auction watch: ${subject.name} is drawing bids in ${subject.district}.`,
+    `Neighborhood news: foot traffic is rising near ${subject.district}.`,
+    `Local player activity: a new ${subject.category.toLowerCase()} deal closed in ${subject.district}.`
+  ];
+  state.cityEvents.unshift(moments[state.day % moments.length]);
+  state.cityEvents = state.cityEvents.slice(0, 3);
+}
+
+function awardDailyMomentum() {
+  if (state.dailyMomentum.includes(state.day)) {
+    return;
+  }
+  state.dailyMomentum.push(state.day);
+  const reward = 100 + state.owned.length * 40;
+  state.cash += reward;
+  pushCeremony(`Daily momentum · +${formatMoney(reward)}`);
+}
+
 function getTenant(propertyId) {
   return state.tenants[propertyId] || null;
 }
@@ -1883,6 +2025,8 @@ function createDefaultState() {
     rentAccruedMigrated: true,
     claimedGoals: [],
     microWins: [],
+    dailyMomentum: [],
+    cityEvents: [],
     streetIssuesResolved: [],
     repaired: []
   };
@@ -1893,6 +2037,8 @@ function normalizeState(nextState = state, assign = true) {
   nextState.repaired = Array.isArray(nextState.repaired) ? nextState.repaired : [];
   nextState.claimedGoals = Array.isArray(nextState.claimedGoals) ? nextState.claimedGoals : [];
   nextState.microWins = Array.isArray(nextState.microWins) ? nextState.microWins : [];
+  nextState.dailyMomentum = Array.isArray(nextState.dailyMomentum) ? nextState.dailyMomentum : [];
+  nextState.cityEvents = Array.isArray(nextState.cityEvents) ? nextState.cityEvents : [];
   nextState.streetIssuesResolved = Array.isArray(nextState.streetIssuesResolved) ? nextState.streetIssuesResolved : [];
   nextState.conditions = nextState.conditions && typeof nextState.conditions === "object" ? nextState.conditions : {};
   nextState.propertyLevels = nextState.propertyLevels && typeof nextState.propertyLevels === "object" ? nextState.propertyLevels : {};

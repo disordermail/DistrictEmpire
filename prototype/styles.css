@@ -464,6 +464,14 @@ h2 {
   padding-bottom: 12px;
 }
 
+.list-divider {
+  margin: 4px 2px -2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
 .item-card {
   background: var(--panel);
   border: 1px solid var(--line);
@@ -473,6 +481,24 @@ h2 {
 
 .compact-card {
   padding: 10px;
+}
+
+.empty-state {
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.empty-state-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 10px;
+  border-radius: 8px;
+  background: var(--blue-soft);
+  color: var(--brand);
+  font-size: 25px;
+  font-weight: 900;
 }
 
 .item-card.warning {
@@ -558,6 +584,82 @@ h2 {
   background: var(--panel);
 }
 
+.portfolio-focus {
+  margin: 0 0 12px;
+}
+
+.portfolio-focus-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0 2px 7px;
+}
+
+.portfolio-focus-header span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.portfolio-focus-header strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.focus-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(180px, 1fr);
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.focus-card {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: 27px 1fr;
+  column-gap: 8px;
+  align-content: center;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--panel);
+  color: var(--ink);
+}
+
+button.focus-card {
+  cursor: pointer;
+}
+
+.focus-card > span {
+  grid-row: span 2;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--blue-soft);
+  color: var(--brand);
+  font-weight: 900;
+}
+
+.focus-card strong,
+.focus-card em {
+  display: block;
+  min-width: 0;
+}
+
+.focus-card strong { font-size: 13px; }
+.focus-card em { color: var(--muted); font-size: 11px; font-style: normal; margin-top: 2px; }
+.focus-card.urgent { border-color: rgba(217, 75, 95, 0.45); background: var(--red-soft); }
+.focus-card.urgent > span { background: var(--urgent); color: white; }
+.focus-card.attention { border-color: rgba(230, 107, 45, 0.38); background: var(--orange-soft); }
+.focus-card.attention > span { background: #ffd8bd; color: #a74512; }
+.focus-card.calm > span { background: var(--green-soft); color: var(--money); }
+
 .compact-rent-action {
   min-height: 38px;
   font-size: 12px;
@@ -624,6 +726,77 @@ h2 {
   padding: 0 2px 8px;
 }
 
+.property-status-card {
+  position: relative;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.property-status-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--money);
+}
+
+.property-status-card.attention::before { background: var(--accent); }
+.property-status-card.urgent::before { background: var(--urgent); }
+.property-status-card.urgent { border-color: rgba(217, 75, 95, 0.38); }
+
+.property-card-title {
+  display: flex;
+  min-width: 0;
+  gap: 9px;
+}
+
+.property-category-icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: var(--blue-soft);
+  color: var(--brand-strong);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.property-card-title h3 { margin: 0; }
+.property-card-title p { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
+.property-status-card header > strong { color: var(--money); font-size: 13px; white-space: nowrap; }
+
+.property-status-line {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 11px 0 8px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 999px;
+  background: var(--money);
+}
+.property-status-card.attention .status-dot { background: var(--accent); }
+.property-status-card.urgent .status-dot { background: var(--urgent); }
+
+.property-card-facts {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 0.8fr;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.property-card-facts span { min-width: 0; }
+
 .detail-stack {
   display: grid;
   gap: 10px;
@@ -650,6 +823,25 @@ h2 {
   border-color: rgba(35, 100, 210, 0.28);
   background: #f8fbff;
 }
+
+.auction-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid rgba(201, 153, 49, 0.55);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #fffdf4, #fff7e8);
+}
+
+.auction-card.quiet { display: block; border-color: var(--line); background: var(--panel); }
+.auction-card h3 { margin: 4px 0; font-size: 16px; }
+.auction-card p { margin: 0; color: var(--muted); font-size: 12px; }
+.auction-kicker { color: #9c6b0e; font-size: 10px; font-weight: 900; letter-spacing: 0; }
+.auction-value { text-align: right; }
+.auction-value span { display: block; color: var(--muted); font-size: 10px; }
+.auction-value strong { display: block; color: var(--gold); font-size: 15px; margin-top: 3px; }
+.auction-card .primary-action { grid-column: 1 / -1; min-height: 38px; margin-top: 0; font-size: 12px; }
 
 .lifecycle-track {
   display: flex;
