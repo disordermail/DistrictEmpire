@@ -14,6 +14,8 @@ Then open `http://localhost:8080`.
 
 ## Included Loop
 
+- Guide a fresh player through a persistent, action-based tutorial: inspect, buy, wait for notary, list, choose an applicant, sign a lease, collect rent, and resolve a task.
+- Keep existing saved games outside the new onboarding flow; use Reset progress to experience it from the beginning.
 - Browse a portrait city map.
 - Use the map-first property sheet with Overview, Rent, and Repairs tabs.
 - Follow the first-60-minutes progress panel.

@@ -141,7 +141,12 @@ const defaultState = {
   rentAccruedMigrated: true,
   claimedGoals: [],
   microWins: [],
-  onboardingComplete: true,
+  onboardingComplete: false,
+  tutorialState: {
+    currentStep: "welcome",
+    completedSteps: [],
+    skipped: false
+  },
   dailyRewardClaimedDay: 0,
   dailyMomentum: [],
   cityEvents: [],
@@ -190,6 +195,7 @@ const levelModal = document.querySelector("#levelModal");
 const levelModalValue = document.querySelector("#levelModalValue");
 const levelModalText = document.querySelector("#levelModalText");
 const welcomeModal = document.querySelector("#welcomeModal");
+const tutorialChip = document.querySelector("#tutorialChip");
 const portfolioBadge = document.querySelector("#portfolioBadge");
 const issuesBadge = document.querySelector("#issuesBadge");
 
@@ -230,6 +236,7 @@ document.querySelector("#claimLevelButton").addEventListener("click", () => {
 });
 document.querySelector("#startOnboardingButton").addEventListener("click", () => {
   state.onboardingComplete = true;
+  advanceTutorial("inspect");
   trackMicroWin("welcome");
   saveState();
   render();
@@ -278,6 +285,8 @@ function render() {
   renderMissions();
   renderFirstHourPanel();
   renderWelcomeModal();
+  renderTutorialDirector();
+  renderNavigationGates();
   renderActivityFeed();
   renderMap();
   renderSheet();
@@ -350,6 +359,10 @@ function renderMissions() {
 }
 
 function renderFirstHourPanel() {
+  firstHourPanel.hidden = !isTutorialComplete();
+  if (!isTutorialComplete()) {
+    return;
+  }
   if ((state.playerLevel >= 2 || state.owned.length >= 3) && !state.microWins.includes("dream-preview")) {
     trackMicroWin("dream-preview", false);
   }
@@ -376,13 +389,94 @@ function renderFirstHourPanel() {
 }
 
 function renderWelcomeModal() {
-  welcomeModal.hidden = true;
+  welcomeModal.hidden = state.onboardingComplete || state.tutorialState.skipped;
+}
 
-  if (!state.onboardingComplete) {
-    state.onboardingComplete = true;
-    trackMicroWin("welcome", false);
-    saveState();
+function renderTutorialDirector() {
+  const step = state.tutorialState.currentStep;
+  const guide = getTutorialGuide(step);
+  tutorialChip.hidden = !state.onboardingComplete || isTutorialComplete() || !guide || state.mapSheetOpen;
+
+  if (tutorialChip.hidden) {
+    return;
   }
+
+  tutorialChip.innerHTML = `<span>Next</span><strong>${guide.title}</strong><em>${guide.detail}</em><button type="button">${guide.cta}</button>`;
+  tutorialChip.querySelector("button").addEventListener("click", () => handleTutorialAction(step));
+}
+
+function getTutorialGuide(step) {
+  return {
+    inspect: { title: "Inspect your first opportunity", detail: "Tap the pulsing starter property on the map.", cta: "Show me" },
+    buy: { title: "Buy the starter apartment", detail: "Review the price and begin notary paperwork.", cta: "Open property" },
+    notary: { title: "Paperwork is in progress", detail: "In this prototype, advance the day to receive the notary handover.", cta: "Advance day" },
+    handover: { title: "Keys are ready", detail: "Choose whether to renovate or advertise first.", cta: "View property" },
+    listing: { title: "Find your first tenant", detail: "Publish a listing to start attracting people.", cta: "Create listing" },
+    applications: { title: "Watch interest build", detail: "Advance the day to receive views, viewings and applications.", cta: "Advance day" },
+    tenant: { title: "Choose a person", detail: "Compare stories and offers before you sign.", cta: "Review applicants" },
+    lease: { title: "Agreement prepared", detail: "Sign the first lease to arrange key handover.", cta: "Review lease" },
+    rent: { title: "First rent is coming", detail: "Advance the day, then collect the transfer in Portfolio.", cta: "Advance day" },
+    tasks: { title: "Care for your property", detail: "Resolve your first task to protect the new lease.", cta: "Open Tasks" },
+    ranking: { title: "Meet the competition", detail: "See where your company stands in Warsaw.", cta: "View Company" },
+    dream: { title: "Set tomorrow's goal", detail: "Preview the next-tier property waiting for you.", cta: "Browse Invest" }
+  }[step] || null;
+}
+
+function handleTutorialAction(step) {
+  const starterId = "mokotow-starter";
+  if (step === "inspect") {
+    state.selectedId = starterId;
+    state.mapSheetOpen = true;
+    showScreen("map");
+  } else if (step === "buy") {
+    state.selectedId = starterId;
+    state.mapSheetOpen = true;
+    showScreen("map");
+  } else if (["notary", "applications", "rent"].includes(step)) {
+    simulateDay();
+    return;
+  } else if (step === "dream") {
+    showScreen("market");
+    advanceTutorial("complete");
+  } else if (["handover", "listing", "tenant", "lease"].includes(step)) {
+    openPropertyInfo(starterId);
+  } else if (["applications", "rent"].includes(step)) {
+    showScreen("portfolio");
+  } else if (step === "tasks") {
+    showScreen("issues");
+  } else if (step === "ranking") {
+    showScreen("ranking");
+    advanceTutorial("dream");
+  }
+  saveState();
+  render();
+}
+
+function advanceTutorial(nextStep) {
+  if (state.tutorialState.skipped || isTutorialComplete()) {
+    return;
+  }
+  const current = state.tutorialState.currentStep;
+  if (current && !state.tutorialState.completedSteps.includes(current)) {
+    state.tutorialState.completedSteps.push(current);
+  }
+  state.tutorialState.currentStep = nextStep;
+}
+
+function isTutorialComplete() {
+  return state.tutorialState.skipped || state.tutorialState.currentStep === "complete";
+}
+
+function renderNavigationGates() {
+  const tutorialActive = state.onboardingComplete && !isTutorialComplete();
+  const marketTab = document.querySelector("#tab-market");
+  const tasksTab = document.querySelector("#tab-issues");
+  const companyTab = document.querySelector("#tab-ranking");
+  const hasLease = Object.keys(state.tenants).length > 0;
+
+  marketTab.disabled = tutorialActive && !["notary", "handover", "listing", "applications", "tenant", "lease", "rent", "tasks", "ranking", "dream"].includes(state.tutorialState.currentStep);
+  tasksTab.disabled = tutorialActive && !["tasks", "ranking", "dream"].includes(state.tutorialState.currentStep);
+  companyTab.disabled = tutorialActive && !hasLease;
 }
 
 function renderActivityFeed() {
@@ -416,6 +510,9 @@ function renderMap() {
       state.selectedId = property.id;
       state.sheetTab = "overview";
       state.mapSheetOpen = true;
+      if (state.tutorialState.currentStep === "inspect" && property.id === "mokotow-starter") {
+        advanceTutorial("buy");
+      }
       saveState();
       render();
     });
@@ -711,6 +808,7 @@ function renderPropertyInfo() {
   const renovateButton = document.querySelector("#renovateLifecycleButton");
   const advertiseButton = document.querySelector("#publishAdvertisementButton");
   const negotiationButtons = document.querySelectorAll("[data-negotiation]");
+  const signLeaseButton = document.querySelector("#signLeaseButton");
 
   maintainButton?.addEventListener("click", () => maintainProperty(property.id));
   upgradeButton?.addEventListener("click", () => upgradeProperty(property.id));
@@ -724,6 +822,7 @@ function renderPropertyInfo() {
   negotiationButtons.forEach((button) => {
     button.addEventListener("click", () => negotiateOffer(property.id, button.dataset.tenantOffer, button.dataset.negotiation));
   });
+  signLeaseButton?.addEventListener("click", () => signLease(property.id));
   evictionButtons.forEach((button) => {
     button.addEventListener("click", () => tryEvictionAction(property.id, button.dataset.evictionAction));
   });
@@ -822,6 +921,17 @@ function renderLifecyclePanel(property) {
             </article>
           `).join("")}
         </div>
+      </article>
+    `;
+  }
+
+  if (stage.stage === "lease-pending" && tenant) {
+    return `
+      <article class="detail-panel lifecycle-panel">
+        <h3>Agreement prepared</h3>
+        <p>${tenant.name} accepted the terms. Sign the lease to arrange key handover and start the first payment cycle.</p>
+        <div class="item-meta"><span>${formatMoney(tenant.rent)} / day</span><span>${tenant.label}</span><span>Move-in tomorrow</span></div>
+        <button class="primary-action" id="signLeaseButton" type="button">Sign lease</button>
       </article>
     `;
   }
@@ -965,6 +1075,9 @@ function resolveStreetIssue(issueId) {
   state.influence += 3;
   addXp(12);
   trackMicroWin("first-issue");
+  if (state.tutorialState.currentStep === "tasks") {
+    advanceTutorial("ranking");
+  }
   pushToast("Neighborhood improved.");
   pushCeremony(issueId === "graffiti" ? "Graffiti removed" : "Street cleaned");
   saveState();
@@ -1086,10 +1199,12 @@ function buyProperty(propertyId, priceOverride = null, source = "listing") {
   state.infoPropertyId = propertyId;
   addXp(20);
   trackMicroWin("first-purchase");
+  advanceTutorial("notary");
   pushToast(`${property.name} reserved. Notary paperwork starts now.`);
   pushCeremony(source === "auction" ? "Auction won · Notary pending" : "Signed · Notary pending");
   saveState();
   render();
+  showScreen("portfolio");
 }
 
 function repairProperty(propertyId, cost) {
@@ -1104,6 +1219,9 @@ function repairProperty(propertyId, cost) {
   }
   addXp(8);
   trackMicroWin("first-renovation");
+  if (state.tutorialState.currentStep === "tasks") {
+    advanceTutorial("ranking");
+  }
   pushToast("Maintenance complete.");
   pushCeremony("Maintenance scheduled");
   saveState();
@@ -1185,6 +1303,9 @@ function collectRent() {
   addXp(Math.max(3, state.owned.length * 3));
   if (collectableRent > 0) {
     trackMicroWin("first-rent");
+    if (state.tutorialState.currentStep === "rent") {
+      advanceTutorial("tasks");
+    }
   }
   pushToast(`Collected ${formatMoney(collectableRent)}. Rent queue cleared.`);
   pushCeremony(`+${formatMoney(collectableRent)}`);
@@ -1245,20 +1366,40 @@ function acceptTenantOffer(propertyId, offerId) {
     relationship: offer.risk === "low" ? 62 : offer.risk === "medium" ? 48 : 38,
     paymentHistory: "New lease"
   };
-  state.propertyStages[propertyId] = { stage: "occupied" };
+  state.propertyStages[propertyId] = { stage: "lease-pending" };
   delete state.advertisements[propertyId];
   state.tenantMemories[offer.id] = {
     name: offer.name,
     startedDay: state.day,
     relationship: state.tenants[propertyId].relationship,
-    events: ["Lease signed"]
+    events: ["Agreement prepared"]
   };
   delete state.listedForSale[propertyId];
-  addAccruedRent(property.useType, offer.rent);
   addXp(10);
   trackMicroWin("first-tenant");
-  pushToast(`${offer.name} signed a lease. First rent is waiting.`);
-  pushCeremony("Lease signed");
+  advanceTutorial("lease");
+  pushToast(`${offer.name} accepted. Review and sign the lease.`);
+  pushCeremony("Agreement prepared");
+  saveState();
+  render();
+}
+
+function signLease(propertyId) {
+  const tenant = getTenant(propertyId);
+  const stage = getPropertyStage(propertyId);
+
+  if (!tenant || stage.stage !== "lease-pending") {
+    return;
+  }
+
+  state.propertyStages[propertyId] = { stage: "occupied" };
+  const memory = state.tenantMemories[tenant.id];
+  if (memory) {
+    memory.events.push("Lease signed");
+  }
+  advanceTutorial("rent");
+  pushToast("Lease signed. The first rent will arrive after the next day starts.");
+  pushCeremony("Keys handed over");
   saveState();
   render();
 }
@@ -1342,6 +1483,9 @@ function processPropertyLifecycle() {
       stage.daysRemaining -= 1;
       if (stage.daysRemaining <= 0) {
         state.propertyStages[property.id] = { stage: "ready-renovation" };
+        if (state.tutorialState.currentStep === "notary") {
+          advanceTutorial("handover");
+        }
         pushCeremony(`${property.name} cleared by notary`);
       }
       return;
@@ -1359,6 +1503,9 @@ function processPropertyLifecycle() {
           break;
         }
         advertisement.applications.push(nextOffer.id);
+      }
+      if (advertisement.applications.length && state.tutorialState.currentStep === "applications") {
+        advanceTutorial("tenant");
       }
     }
 
@@ -1398,6 +1545,9 @@ function renovateForTenant(propertyId) {
   state.propertyStages[propertyId] = { stage: "ready-advertise" };
   addXp(14);
   trackMicroWin("first-renovation");
+  if (state.tutorialState.currentStep === "handover") {
+    advanceTutorial("listing");
+  }
   pushToast("Renovation complete. The property is ready to advertise.");
   saveState();
   render();
@@ -1412,6 +1562,7 @@ function publishAdvertisement(propertyId) {
 
   state.propertyStages[propertyId] = { stage: "advertising" };
   state.advertisements[propertyId] = { views: 0, visits: 0, applications: [], publishedDay: state.day };
+  advanceTutorial("applications");
   pushToast("Advertisement published. Demand will grow each simulated day.");
   saveState();
   render();
@@ -1507,6 +1658,7 @@ function getSelectedProperty() {
 function openPropertyInfo(propertyId) {
   state.infoPropertyId = propertyId;
   state.selectedId = propertyId;
+  state.mapSheetOpen = false;
   saveState();
   render();
   showScreen("property");
@@ -1558,8 +1710,9 @@ function getPotentialRent(property) {
 function getActiveRent(property) {
   const tenant = getTenant(property.id);
   const evictionCase = getEvictionCase(property.id);
+  const stage = getPropertyStage(property.id);
 
-  if (!tenant || evictionCase || state.listedForSale[property.id] || state.latePayments[property.id]) {
+  if (!tenant || stage.stage !== "occupied" || evictionCase || state.listedForSale[property.id] || state.latePayments[property.id]) {
     return 0;
   }
 
@@ -2007,10 +2160,13 @@ function loadState() {
   try {
     const parsedState = JSON.parse(raw);
     const hasAccruedRent = Object.prototype.hasOwnProperty.call(parsedState, "rentAccrued");
+    const hasTutorialState = Object.prototype.hasOwnProperty.call(parsedState, "tutorialState");
     return normalizeState({
       ...defaultState,
       ...parsedState,
-      rentAccruedMigrated: hasAccruedRent ? parsedState.rentAccruedMigrated ?? true : false
+      rentAccruedMigrated: hasAccruedRent ? parsedState.rentAccruedMigrated ?? true : false,
+      onboardingComplete: hasTutorialState ? parsedState.onboardingComplete : true,
+      tutorialState: hasTutorialState ? parsedState.tutorialState : { currentStep: "complete", completedSteps: [], skipped: true }
     }, false);
   } catch {
     return createDefaultState();
@@ -2024,6 +2180,11 @@ function saveState() {
 function createDefaultState() {
   return {
     ...defaultState,
+    tutorialState: {
+      currentStep: "welcome",
+      completedSteps: [],
+      skipped: false
+    },
     owned: [],
     conditions: {},
     propertyLevels: {},
@@ -2079,6 +2240,10 @@ function normalizeState(nextState = state, assign = true) {
   nextState.toast = nextState.toast || "";
   nextState.ceremony = nextState.ceremony || "";
   nextState.onboardingComplete = Boolean(nextState.onboardingComplete);
+  nextState.tutorialState = nextState.tutorialState && typeof nextState.tutorialState === "object" ? nextState.tutorialState : { currentStep: "complete", completedSteps: [], skipped: true };
+  nextState.tutorialState.currentStep = nextState.tutorialState.currentStep || "welcome";
+  nextState.tutorialState.completedSteps = Array.isArray(nextState.tutorialState.completedSteps) ? nextState.tutorialState.completedSteps : [];
+  nextState.tutorialState.skipped = Boolean(nextState.tutorialState.skipped);
   nextState.dailyRewardClaimedDay = Number.isFinite(Number(nextState.dailyRewardClaimedDay)) ? Number(nextState.dailyRewardClaimedDay) : 0;
 
   Object.keys(nextState.listedForSale).forEach((propertyId) => {

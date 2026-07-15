@@ -1066,7 +1066,7 @@ button.focus-card {
 
 .tab-bar {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 3px;
   padding: 8px 8px 10px;
   background: rgba(255, 255, 255, 0.96);
@@ -1087,6 +1087,11 @@ button.focus-card {
 .tab.active {
   background: var(--blue-soft);
   color: var(--brand-strong);
+}
+
+.tab:disabled {
+  color: #aeb9c4;
+  cursor: not-allowed;
 }
 
 .nav-badge {
@@ -1349,6 +1354,55 @@ button.focus-card {
 .welcome-card p:not(.eyebrow) {
   color: var(--muted);
   line-height: 1.45;
+}
+
+.tutorial-chip {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 80px;
+  z-index: 8;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 10px;
+  align-items: center;
+  padding: 11px 12px;
+  border: 1px solid rgba(35, 100, 210, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 12px 24px rgba(21, 33, 45, 0.16);
+}
+
+.tutorial-chip span,
+.tutorial-chip strong,
+.tutorial-chip em {
+  grid-column: 1;
+}
+
+.tutorial-chip span {
+  color: var(--brand);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.tutorial-chip strong { font-size: 13px; line-height: 1.25; }
+.tutorial-chip em { color: var(--muted); font-size: 11px; font-style: normal; line-height: 1.25; margin-top: 2px; }
+
+.tutorial-chip button {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  min-width: 78px;
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 8px;
+  background: var(--brand);
+  color: white;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
 }
 
 .welcome-rewards {
