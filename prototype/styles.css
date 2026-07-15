@@ -266,6 +266,23 @@ h2 {
   animation: sheetRise 260ms cubic-bezier(.2, .8, .2, 1);
 }
 
+.sheet-close {
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
 .building-emblem {
   width: 82px;
   height: 82px;

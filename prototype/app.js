@@ -149,6 +149,7 @@ const defaultState = {
   repaired: [],
   selectedId: "mokotow-starter",
   infoPropertyId: "mokotow-starter",
+  mapSheetOpen: false,
   sheetTab: "overview",
   day: 1,
   toast: "",
@@ -163,6 +164,7 @@ const screens = document.querySelectorAll(".screen");
 const tabs = document.querySelectorAll(".tab");
 const mapStage = document.querySelector("#mapStage");
 const buildingSheet = document.querySelector("#buildingSheet");
+const sheetCloseButton = document.querySelector("#sheetCloseButton");
 const sheetDistrict = document.querySelector("#sheetDistrict");
 const sheetTitle = document.querySelector("#sheetTitle");
 const sheetDescription = document.querySelector("#sheetDescription");
@@ -199,6 +201,11 @@ document.querySelector("#resetButton").addEventListener("click", () => {
 });
 
 document.querySelector("#collectRentButton").addEventListener("click", collectRent);
+sheetCloseButton.addEventListener("click", () => {
+  state.mapSheetOpen = false;
+  saveState();
+  render();
+});
 document.querySelector("#propertyBackButton").addEventListener("click", () => showScreen("portfolio"));
 document.querySelector("#dailyRewardButton").addEventListener("click", claimDailyReward);
 document.querySelector("#grantCashButton").addEventListener("click", () => {
@@ -229,7 +236,14 @@ document.querySelector("#startOnboardingButton").addEventListener("click", () =>
 });
 
 tabs.forEach((tab) => {
-  tab.addEventListener("click", () => showScreen(tab.dataset.screen));
+  tab.addEventListener("click", () => {
+    if (tab.dataset.screen === "map") {
+      state.mapSheetOpen = false;
+      saveState();
+      render();
+    }
+    showScreen(tab.dataset.screen);
+  });
 });
 
 sheetTabs.forEach((tab) => {
@@ -401,6 +415,7 @@ function renderMap() {
     button.addEventListener("click", () => {
       state.selectedId = property.id;
       state.sheetTab = "overview";
+      state.mapSheetOpen = true;
       saveState();
       render();
     });
@@ -411,7 +426,7 @@ function renderMap() {
 function renderSheet() {
   const property = getSelectedProperty();
 
-  if (!property) {
+  if (!property || !state.mapSheetOpen) {
     buildingSheet.hidden = true;
     return;
   }
@@ -1042,6 +1057,7 @@ function createPropertyCard(property, mode) {
     mapButton.textContent = "Map";
     mapButton.addEventListener("click", () => {
       state.selectedId = property.id;
+      state.mapSheetOpen = true;
       saveState();
       showScreen("map");
       render();
@@ -2054,6 +2070,7 @@ function normalizeState(nextState = state, assign = true) {
   nextState.rentAccrued.commercial = Math.max(0, Math.round(Number(nextState.rentAccrued.commercial || 0)));
   nextState.rentAccruedMigrated = Boolean(nextState.rentAccruedMigrated);
   nextState.infoPropertyId = nextState.infoPropertyId || nextState.selectedId || defaultState.selectedId;
+  nextState.mapSheetOpen = Boolean(nextState.mapSheetOpen);
   nextState.sheetTab = ["overview", "rent", "repairs"].includes(nextState.sheetTab) ? nextState.sheetTab : defaultState.sheetTab;
   nextState.influence = Number.isFinite(Number(nextState.influence)) ? Number(nextState.influence) : defaultState.influence;
   nextState.xp = Number.isFinite(Number(nextState.xp)) ? Number(nextState.xp) : defaultState.xp;
