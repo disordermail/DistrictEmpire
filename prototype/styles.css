@@ -264,6 +264,17 @@ h2 {
   border-color: var(--money);
 }
 
+.property-pin.npc-owned {
+  background: var(--prestige-soft);
+  border-color: var(--prestige);
+}
+
+.property-pin.npc-owned small {
+  min-width: 26px;
+  background: var(--prestige);
+  font-size: 9px;
+}
+
 .property-pin.listed {
   background: var(--red-soft);
   border-color: var(--urgent);

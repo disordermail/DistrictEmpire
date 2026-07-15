@@ -77,6 +77,13 @@ const rivals = [
   { name: "Old Town Capital", score: 51000 }
 ];
 
+const npcProfiles = [
+  { id: "anna-kowalska", name: "Anna Kowalska", company: "Kowalska Homes", avatar: "AK", archetype: "Residential Landlord", districts: ["Mokotow", "Praga"], types: ["residential"], budget: 62000, risk: "low", frequency: 2, reputation: 58 },
+  { id: "nova-estates", name: "Marek Nowak", company: "Nova Estates", avatar: "NE", archetype: "Commercial Investor", districts: ["Wola", "Zoliborz"], types: ["commercial"], budget: 108000, risk: "medium", frequency: 2, reputation: 71 },
+  { id: "riverside-fund", name: "Elena Zielinska", company: "Riverside Investments", avatar: "RI", archetype: "Investment Fund", districts: ["Srodmiescie", "Wola"], types: ["commercial", "residential"], budget: 180000, risk: "high", frequency: 3, reputation: 83 },
+  { id: "green-development", name: "Tomasz Zielinski", company: "Green Development", avatar: "GD", archetype: "Property Flipper", districts: ["Praga", "Mokotow"], types: ["residential"], budget: 76000, risk: "medium", frequency: 1, reputation: 64 }
+];
+
 const commercialTenants = [
   { name: "Green Cross Pharmacy", category: "health", label: "Pharmacy", multiplier: 1.34, risk: "low" },
   { name: "Corner Grocery", category: "trade", label: "Grocery shop", multiplier: 1.12, risk: "low" },
@@ -128,6 +135,10 @@ const defaultState = {
   conditions: { "mokotow-starter": 72 },
   propertyLevels: {},
   propertyUseModes: {},
+  npcInvestors: {},
+  npcOwnership: {},
+  npcPropertyStates: {},
+  propertyOwners: { "mokotow-starter": [{ ownerType: "PLAYER", ownerId: "player", share: 100 }] },
   tenants: {
     "mokotow-starter": {
       id: "maria-teacher",
@@ -543,15 +554,16 @@ function renderMap() {
     const button = document.createElement("button");
     button.type = "button";
     const listed = Boolean(state.listedForSale[property.id]);
+    const npcOwner = getNpcOwner(property.id);
     button.className = [
       "property-pin",
-      listed ? "listed" : state.owned.includes(property.id) ? "owned" : "available",
+      listed ? "listed" : state.owned.includes(property.id) ? "owned" : npcOwner ? "npc-owned" : "available",
       state.selectedId === property.id ? "selected" : "",
       state.tutorialState.currentStep === "expand" && property.id === "praga-yard" ? "tutorial-target" : ""
     ].join(" ");
     button.style.left = `${property.x}%`;
     button.style.top = `${property.y}%`;
-    button.innerHTML = `<span>${property.icon}</span><small>${getPropertyLevel(property.id)}</small>`;
+    button.innerHTML = `<span>${property.icon}</span><small>${npcOwner ? npcOwner.avatar : getPropertyLevel(property.id)}</small>`;
     button.setAttribute("aria-label", property.name);
     button.addEventListener("click", () => {
       state.selectedId = property.id;
@@ -574,8 +586,9 @@ function renderSheet() {
 
   buildingSheet.hidden = false;
   const owned = state.owned.includes(property.id);
+  const npcOwner = getNpcOwner(property.id);
   const listed = Boolean(state.listedForSale[property.id]);
-  sheetDistrict.textContent = `${property.district} · ${listed ? "Listed by you" : owned ? "Owned" : "For sale"}`;
+  sheetDistrict.textContent = `${property.district} · ${listed ? "Listed by you" : owned ? "Owned by you" : npcOwner ? `Owned by ${npcOwner.company}` : "For sale"}`;
   sheetEmblem.textContent = property.icon;
   sheetTitle.textContent = property.name;
   sheetDescription.textContent = property.description;
@@ -590,8 +603,8 @@ function renderSheet() {
   `;
   renderSheetTabs(property);
   renderSheetPanel(property);
-  sheetAction.textContent = owned ? "Info" : `Buy for ${formatMoney(property.price)}`;
-  sheetAction.disabled = !owned && state.cash < property.price;
+  sheetAction.textContent = owned ? "Info" : npcOwner ? "View investor" : `Buy for ${formatMoney(property.price)}`;
+  sheetAction.disabled = Boolean(npcOwner) || (!owned && state.cash < property.price);
 }
 
 function renderSheetTabs(property) {
@@ -656,7 +669,7 @@ function renderSheetPanel(property) {
 
 function renderMarket() {
   const marketList = document.querySelector("#marketList");
-  const available = properties.filter((property) => !state.owned.includes(property.id));
+  const available = properties.filter((property) => !state.owned.includes(property.id) && !state.npcOwnership[property.id]);
   const playerListings = properties.filter((property) => state.owned.includes(property.id) && state.listedForSale[property.id]);
   const listings = [...playerListings, ...available];
 
@@ -698,7 +711,7 @@ function createDreamPropertyCard() {
 }
 
 function createAuctionCard() {
-  const property = properties.find((item) => !state.owned.includes(item.id));
+  const property = properties.find((item) => !state.owned.includes(item.id) && !state.npcOwnership[item.id]);
   const card = document.createElement("article");
 
   if (!property) {
@@ -1232,6 +1245,7 @@ function renderRanking() {
     .reduce((total, property) => total + getSuggestedSalePrice(property), 0);
 
   const rows = [
+    ...npcProfiles.map((profile) => ({ name: profile.company, score: state.npcInvestors[profile.id]?.netWorth || profile.budget, subtitle: `${profile.archetype} · NPC investor` })),
     ...rivals,
     { name: "You", score: playerScore }
   ].sort((a, b) => b.score - a.score);
@@ -1254,7 +1268,7 @@ function renderRanking() {
         <h3>${index + 1}. ${row.name}</h3>
         <strong>${formatMoney(row.score)}</strong>
       </header>
-      <p>${row.name === "You" ? "Your offline MVP valuation." : "Simulated local competitor."}</p>
+      <p>${row.name === "You" ? "Your offline MVP valuation." : row.subtitle || "Simulated local competitor."}</p>
     `;
     rankingList.appendChild(card);
   });
@@ -1329,6 +1343,7 @@ function buyProperty(propertyId, priceOverride = null, source = "listing") {
 
   state.cash -= purchasePrice;
   state.owned.push(propertyId);
+  state.propertyOwners[propertyId] = [{ ownerType: "PLAYER", ownerId: "player", share: 100 }];
   state.conditions[propertyId] = getCondition(propertyId);
   state.propertyLevels[propertyId] = getPropertyLevel(propertyId);
   state.propertyStages[propertyId] = { stage: "notary", daysRemaining: 1 };
@@ -1422,6 +1437,7 @@ function sellListedProperty(propertyId) {
   delete state.advertisements[propertyId];
   delete state.latePayments[propertyId];
   delete state.listedForSale[propertyId];
+  delete state.propertyOwners[propertyId];
   addXp(35);
   pushToast(`Sold for ${formatMoney(listedPrice)}.`);
   saveState();
@@ -1458,6 +1474,7 @@ function collectRent() {
 
 function simulateDay() {
   state.day += 1;
+  processNpcInvestors();
   processPropertyLifecycle();
   processEvictionDays();
   const accrued = accrueDailyRent();
@@ -1466,6 +1483,59 @@ function simulateDay() {
   pushToast(accrued > 0 ? `New day: ${formatMoney(accrued)} rent is waiting.` : "New day simulated. Check your property lifecycle.");
   saveState();
   render();
+}
+
+function processNpcInvestors() {
+  npcProfiles.forEach((profile, index) => {
+    const investor = state.npcInvestors[profile.id];
+    if (!investor || state.day % profile.frequency !== index % profile.frequency) return;
+
+    const ownedIds = Object.entries(state.npcOwnership).filter(([, ownerId]) => ownerId === profile.id).map(([propertyId]) => propertyId);
+    const candidates = properties.filter((property) => {
+      const protectedStarter = property.id === "mokotow-starter" || (property.id === "praga-yard" && state.owned.length < 2);
+      return !protectedStarter && !state.owned.includes(property.id) && !state.npcOwnership[property.id] && investor.budget >= property.price;
+    }).sort((a, b) => getNpcInterest(profile, b) - getNpcInterest(profile, a));
+
+    const preferred = candidates[0];
+    const actionRoll = deterministicRoll(`${profile.id}-activity-${state.day}`);
+    if (preferred && actionRoll < 54) {
+      state.npcOwnership[preferred.id] = profile.id;
+      state.propertyOwners[preferred.id] = [{ ownerType: "NPC_INVESTOR", ownerId: profile.id, share: 100 }];
+      state.npcPropertyStates[preferred.id] = { stage: "notary", acquiredDay: state.day };
+      investor.budget -= preferred.price;
+      investor.netWorth += preferred.price;
+      addNpcActivity(`${profile.company} bought ${preferred.name} in ${preferred.district}.`);
+      return;
+    }
+
+    const activeProperty = properties.find((property) => ownedIds.includes(property.id));
+    if (!activeProperty) return;
+    const npcState = state.npcPropertyStates[activeProperty.id] || { stage: "notary", acquiredDay: state.day };
+    if (npcState.stage === "notary") {
+      npcState.stage = "renovating";
+      state.npcPropertyStates[activeProperty.id] = npcState;
+      addNpcActivity(`${profile.company} started a renovation at ${activeProperty.name}.`);
+    } else if (npcState.stage === "renovating") {
+      npcState.stage = activeProperty.useType === "commercial" ? "business-open" : "rented";
+      state.npcPropertyStates[activeProperty.id] = npcState;
+      const activity = activeProperty.useType === "commercial" ? "opened a local business at" : "published a rental at";
+      addNpcActivity(`${profile.company} ${activity} ${activeProperty.name}.`);
+    } else if (actionRoll < 22) {
+      investor.reputation = Math.min(100, investor.reputation + 1);
+      addNpcActivity(`${profile.company} completed property management at ${activeProperty.name}.`);
+    }
+  });
+}
+
+function getNpcInterest(profile, property) {
+  const districtScore = profile.districts.includes(property.district) ? 40 : 0;
+  const typeScore = profile.types.includes(property.useType) ? 28 : 0;
+  return districtScore + typeScore + property.tier * (profile.risk === "high" ? 9 : 5) - Math.round(property.price / 12000);
+}
+
+function addNpcActivity(message) {
+  state.cityEvents.unshift(message);
+  state.cityEvents = state.cityEvents.slice(0, 5);
 }
 
 function claimDailyReward() {
@@ -2029,6 +2099,11 @@ function getTenant(propertyId) {
   return state.tenants[propertyId] || null;
 }
 
+function getNpcOwner(propertyId) {
+  const ownerId = state.npcOwnership[propertyId];
+  return npcProfiles.find((profile) => profile.id === ownerId) || null;
+}
+
 function getEvictionCase(propertyId) {
   return state.evictionCases[propertyId] || null;
 }
@@ -2360,6 +2435,10 @@ function createDefaultState() {
       }
     },
     propertyStages: { "mokotow-starter": { stage: "occupied" } },
+    npcInvestors: createNpcInvestors(),
+    npcOwnership: {},
+    npcPropertyStates: {},
+    propertyOwners: { "mokotow-starter": [{ ownerType: "PLAYER", ownerId: "player", share: 100 }] },
     advertisements: {},
     tenantMemories: {},
     latePayments: {},
@@ -2379,6 +2458,14 @@ function createDefaultState() {
   };
 }
 
+function createNpcInvestors() {
+  return Object.fromEntries(npcProfiles.map((profile) => [profile.id, {
+    budget: profile.budget,
+    netWorth: profile.budget,
+    reputation: profile.reputation
+  }]));
+}
+
 function normalizeState(nextState = state, assign = true) {
   nextState.owned = Array.isArray(nextState.owned) ? nextState.owned : [];
   nextState.repaired = Array.isArray(nextState.repaired) ? nextState.repaired : [];
@@ -2390,6 +2477,24 @@ function normalizeState(nextState = state, assign = true) {
   nextState.conditions = nextState.conditions && typeof nextState.conditions === "object" ? nextState.conditions : {};
   nextState.propertyLevels = nextState.propertyLevels && typeof nextState.propertyLevels === "object" ? nextState.propertyLevels : {};
   nextState.propertyUseModes = nextState.propertyUseModes && typeof nextState.propertyUseModes === "object" ? nextState.propertyUseModes : {};
+  nextState.npcInvestors = { ...createNpcInvestors(), ...(nextState.npcInvestors && typeof nextState.npcInvestors === "object" ? nextState.npcInvestors : {}) };
+  nextState.npcOwnership = nextState.npcOwnership && typeof nextState.npcOwnership === "object" ? nextState.npcOwnership : {};
+  nextState.npcPropertyStates = nextState.npcPropertyStates && typeof nextState.npcPropertyStates === "object" ? nextState.npcPropertyStates : {};
+  nextState.propertyOwners = nextState.propertyOwners && typeof nextState.propertyOwners === "object" ? nextState.propertyOwners : {};
+
+  Object.entries(nextState.npcOwnership).forEach(([propertyId, investorId]) => {
+    if (!properties.some((property) => property.id === propertyId) || nextState.owned.includes(propertyId) || !npcProfiles.some((profile) => profile.id === investorId)) {
+      delete nextState.npcOwnership[propertyId];
+      delete nextState.npcPropertyStates[propertyId];
+    }
+  });
+
+  nextState.owned.forEach((propertyId) => {
+    if (!nextState.propertyOwners[propertyId]) nextState.propertyOwners[propertyId] = [{ ownerType: "PLAYER", ownerId: "player", share: 100 }];
+  });
+  Object.entries(nextState.npcOwnership).forEach(([propertyId, investorId]) => {
+    if (!nextState.propertyOwners[propertyId]) nextState.propertyOwners[propertyId] = [{ ownerType: "NPC_INVESTOR", ownerId: investorId, share: 100 }];
+  });
   nextState.tenants = nextState.tenants && typeof nextState.tenants === "object" ? nextState.tenants : {};
   nextState.propertyStages = nextState.propertyStages && typeof nextState.propertyStages === "object" ? nextState.propertyStages : {};
   nextState.advertisements = nextState.advertisements && typeof nextState.advertisements === "object" ? nextState.advertisements : {};
