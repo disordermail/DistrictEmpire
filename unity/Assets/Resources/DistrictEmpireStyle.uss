@@ -43,8 +43,8 @@
 .map-stage { position: relative; height: 470px; margin-top: 12px; margin-bottom: 10px; overflow: hidden; background-color: #b8d6f2; border-width: 1px; border-color: #92b5d3; border-radius: 8px; }
 .map-activity { position: absolute; left: 14px; top: 14px; padding: 7px 9px; background-color: #ffffff; color: #596a79; border-radius: 14px; border-width: 1px; border-color: #dce4ea; }
 .map-pin { position: absolute; width: 58px; height: 58px; min-width: 58px; min-height: 58px; margin-left: -29px; margin-top: -29px; padding: 6px; justify-content: center; align-items: center; background-color: #ffffff; border-width: 2px; border-radius: 8px; color: #15212d; }
-.map-pin-available { border-color: #245ec7; background-color: #ffffff; }
-.map-pin-owned { border-color: #07875f; background-color: #e5f6ef; }
+.map-pin-available { border-color: #07875f; background-color: #e5f6ef; }
+.map-pin-owned { border-color: #245ec7; background-color: #eaf1ff; }
 .pin-tier { position: absolute; top: -9px; right: -9px; min-width: 22px; height: 22px; justify-content: center; align-items: center; background-color: #a97816; color: #ffffff; border-radius: 7px; border-width: 2px; border-color: #ffffff; }
 .map-legend { flex-direction: row; gap: 8px; align-items: center; }
 .market-tabs { flex-direction: row; gap: 6px; margin-top: 8px; margin-bottom: 10px; }
@@ -65,14 +65,14 @@
 .briefing-metric { width: 48%; min-height: 52px; padding: 8px; background-color: #ffffff; border-radius: 7px; border-width: 1px; border-color: #dce4ea; }
 .metric-income { background-color: #e5f6ef; border-color: #9bd9c2; }
 .metric-attention { background-color: #fff0e5; border-color: #efc49f; }
-.rent-card { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+.rent-card { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; border-width: 2px; }
 .rent-copy { flex-grow: 1; min-width: 0; }
 .rent-action { width: 118px; min-width: 118px; min-height: 44px; margin-top: 0; font-size: 12px; }
 .card-top { flex-direction: row; justify-content: space-between; align-items: flex-start; }
 .tier-badge { padding: 5px 7px; background-color: #fff8e4; color: #a97816; border-radius: 10px; -unity-font-style: bold; }
 .property-bottom { flex-direction: row; justify-content: space-between; margin-top: 10px; padding-top: 9px; border-top-width: 1px; border-top-color: #dce4ea; }
 .portfolio-group-title { margin-left: 3px; margin-top: 12px; margin-bottom: 5px; }
-.status-chip { align-self: flex-start; margin-top: 8px; margin-bottom: 4px; padding: 6px 9px; border-radius: 12px; }
+.status-chip { align-self: flex-start; margin-top: 8px; margin-bottom: 4px; padding: 7px 10px; border-radius: 12px; font-size: 13px; -unity-font-style: bold; }
 .status-income { background-color: #e5f6ef; color: #046c4c; }
 .status-waiting { background-color: #fff3da; color: #8b4d05; }
 .status-problem { background-color: #fdecef; color: #a82e43; }

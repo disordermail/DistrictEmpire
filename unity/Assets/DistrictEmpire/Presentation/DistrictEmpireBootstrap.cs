@@ -128,7 +128,6 @@ namespace DistrictEmpire.Presentation
             metrics.Add(Metric("Applications", owned.Sum(p => p.Stage == PropertyStage.Applications ? p.Applicants.Count : 0).ToString(), "neutral"));
             metrics.Add(Metric("City rank", "#12", "neutral"));
             desk.Add(metrics); content.Add(desk);
-            RenderLivingBriefing(owned);
 
             var rent = UiKit.Card(game.State.RentReady > 0 ? "income" : "neutral"); rent.AddToClassList("rent-card");
             var copy = new VisualElement(); copy.AddToClassList("rent-copy");
@@ -144,6 +143,7 @@ namespace DistrictEmpire.Presentation
                 else ShowToast("Maria's next payment is due tomorrow.");
             }, game.State.RentReady > 0 ? "income" : "secondary");
             collect.AddToClassList("rent-action"); rent.Add(collect); content.Add(rent);
+            RenderLivingBriefing(owned);
 
             content.Add(SectionHeading("YOUR PORTFOLIO", owned.Count == 0 ? "Build your first asset" : "Act on the most important property first"));
             AddPropertyGroup("NEEDS A DECISION", owned.Where(p => p.Stage == PropertyStage.Applications || p.Stage == PropertyStage.ChoosingUse).ToList());
@@ -239,7 +239,10 @@ namespace DistrictEmpire.Presentation
                 identity.Add(UiKit.Text(property.Icon, 11, true, UiKit.Blue)); identity.Add(UiKit.Text(property.Name, 17, true)); identity.Add(UiKit.Text(property.District + " · " + property.Category, 11, false, UiKit.Muted));
                 top.Add(identity); top.Add(Badge("TIER " + property.Tier, "tier-badge")); card.Add(top);
                 card.Add(UiKit.Text("Estimated daily rent " + Money(property.BaseDailyRent) + " · Condition " + property.Condition + "%", 12, false, UiKit.Muted));
-                card.Add(UiKit.Button("Buy for " + Money(property.Price), () => BuyFromMarket(property), "primary")); content.Add(card);
+                var affordable = game.State.Cash >= property.Price;
+                var buy = UiKit.Button(affordable ? "Buy now · " + Money(property.Price) : "Need " + Money(property.Price - game.State.Cash) + " more", () => BuyFromMarket(property), affordable ? "income" : "locked");
+                if (!affordable) { buy.SetEnabled(false); buy.tooltip = "Build cash flow to afford this property."; }
+                card.Add(buy); content.Add(card);
             }
             var dream = UiKit.Card("waiting"); dream.AddToClassList("dream-card"); dream.Add(UiKit.Text("DREAM PROPERTY", 10, true, UiKit.Amber)); dream.Add(UiKit.Text("Royal Riverside Tower", 19, true)); dream.Add(UiKit.Text("Locked · unlock at Company Level 4", 12, true, UiKit.Amber)); dream.Add(UiKit.Text("Estimated rent 9,200 PLN / day · Luxury auction tomorrow", 11, false, UiKit.Muted)); content.Add(dream);
         }
@@ -427,7 +430,7 @@ namespace DistrictEmpire.Presentation
             var status = UiKit.Text(Status(property), 12, true, StatusColor(property)); status.AddToClassList("status-chip"); status.AddToClassList("status-" + StatusTone(property)); card.Add(status);
             card.Add(UiKit.Text(PropertyDescription(property), 12, false, UiKit.Muted));
             var bottom = UiKit.Row("property-bottom"); bottom.Add(UiKit.Text("Monthly " + Money((property.TenantDailyRent > 0 ? property.TenantDailyRent : property.BaseDailyRent) * 30), 11, true)); bottom.Add(UiKit.Text("Condition " + property.Condition + "%", 11, true)); card.Add(bottom);
-            if (showAction) card.Add(UiKit.Button("Open property", () => { selectedPropertyId = property.Id; screen = "Property"; Render(); }, "secondary"));
+            if (showAction) card.Add(UiKit.Button(PropertyActionLabel(property), () => { selectedPropertyId = property.Id; screen = "Property"; Render(); }, property.Condition < 90 ? "danger" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse ? "primary" : "secondary"));
             return card;
         }
 
@@ -450,6 +453,7 @@ namespace DistrictEmpire.Presentation
         private static string Money(int value) => value.ToString("N0") + " PLN";
         private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary ? 1 : property.Condition < 90 ? 2 : 3;
         private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : "Choose a use and advertise to start earning";
+        private static string PropertyActionLabel(Property property) => property.Condition < 90 ? "Repair pipe" : property.Stage == PropertyStage.Notary ? "Sign documents" : property.Stage == PropertyStage.ChoosingUse ? "Choose property use" : property.Stage == PropertyStage.Listing ? "Check listing progress" : property.Stage == PropertyStage.Applications ? "Choose tenant" : property.Stage == PropertyStage.Occupied ? "View tenant" : "Publish listing";
         private static StyleColor StatusColor(Property property) => property.Stage == PropertyStage.Occupied ? UiKit.Green : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? UiKit.Amber : UiKit.Blue;
         private static string StatusTone(Property property) => property.Condition < 90 ? "problem" : property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse ? "decision" : "managed";
         private string MapPinClass(Property property) => property.Condition < 90 && property.IsOwned ? "map-pin-problem" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "map-pin-waiting" : property.IsOwned ? "map-pin-owned" : property.Price > game.State.Cash ? "map-pin-locked" : property.Tier >= 3 ? "map-pin-dream" : "map-pin-available";
