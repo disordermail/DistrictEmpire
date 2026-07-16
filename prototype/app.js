@@ -226,12 +226,35 @@ const tutorialChip = document.querySelector("#tutorialChip");
 const portfolioBadge = document.querySelector("#portfolioBadge");
 const issuesBadge = document.querySelector("#issuesBadge");
 const infoPopover = document.querySelector("#infoPopover");
+const menuLayer = document.querySelector("#menuLayer");
+const menuEmpireValue = document.querySelector("#menuEmpireValue");
+const menuLevelValue = document.querySelector("#menuLevelValue");
 
 document.querySelector("#resetButton").addEventListener("click", () => {
   state = createDefaultState();
   saveState();
   render();
-  showScreen("map");
+  showScreen("portfolio");
+});
+
+document.querySelector("#menuTrigger").addEventListener("click", () => { menuLayer.hidden = false; });
+document.querySelector("#menuClose").addEventListener("click", () => { menuLayer.hidden = true; });
+menuLayer.addEventListener("click", (event) => {
+  if (event.target === menuLayer) menuLayer.hidden = true;
+});
+document.querySelectorAll("[data-menu-screen]").forEach((button) => {
+  button.addEventListener("click", () => {
+    menuLayer.hidden = true;
+    showScreen(button.dataset.menuScreen);
+  });
+});
+document.querySelectorAll("[data-menu-message]").forEach((button) => {
+  button.addEventListener("click", () => {
+    menuLayer.hidden = true;
+    pushToast(button.dataset.menuMessage);
+    saveState();
+    render();
+  });
 });
 
 document.querySelector("#collectRentButton").addEventListener("click", collectRent);
@@ -348,6 +371,8 @@ function renderStatus() {
   document.querySelector("#ownedValue").textContent = String(ownedProperties.length);
   document.querySelector("#influenceValue").textContent = String(state.influence);
   document.querySelector("#playerLevelValue").textContent = String(state.playerLevel);
+  menuLevelValue.textContent = String(state.playerLevel);
+  menuEmpireValue.textContent = formatMoney(state.cash + ownedProperties.reduce((total, property) => total + getSuggestedSalePrice(property), 0));
   document.querySelector("#homeRentValue").textContent = formatMoney(homeRent);
   document.querySelector("#shopRentValue").textContent = formatMoney(shopRent);
   document.querySelector("#rentKicker").textContent = collectableRent > 0 ? "Rent ready" : "Next rent";
@@ -526,12 +551,10 @@ function isTutorialComplete() {
 
 function renderNavigationGates() {
   const tutorialActive = state.onboardingComplete && !isTutorialComplete();
-  const marketTab = document.querySelector("#tab-market");
   const tasksTab = document.querySelector("#tab-issues");
   const companyTab = document.querySelector("#tab-ranking");
   const hasLease = Object.keys(state.tenants).length > 0;
 
-  marketTab.disabled = tutorialActive && !["notary", "handover", "listing", "applications", "tenant", "lease", "rent", "tasks", "ranking", "dream"].includes(state.tutorialState.currentStep);
   tasksTab.disabled = tutorialActive && !["repair", "tasks", "ranking", "dream"].includes(state.tutorialState.currentStep);
   companyTab.disabled = tutorialActive && !hasLease;
 }
@@ -1251,6 +1274,16 @@ function renderRanking() {
   ].sort((a, b) => b.score - a.score);
 
   rankingList.innerHTML = "";
+  const activeIncome = properties.filter((property) => state.owned.includes(property.id)).reduce((total, property) => total + getActiveRent(property), 0);
+  const repairs = properties.filter((property) => state.owned.includes(property.id) && property.tier <= 2 && !state.repaired.includes(property.id)).length;
+  const empireDesk = document.createElement("article");
+  empireDesk.className = "item-card empire-desk";
+  empireDesk.innerHTML = `
+    <p class="eyebrow">Company health</p>
+    <h3>District Empire</h3>
+    <div class="item-meta"><span>${formatMoney(activeIncome)} daily income</span><span>${state.owned.length} properties</span><span>${repairs} repairs</span><span>Level ${state.playerLevel}</span></div>
+  `;
+  rankingList.appendChild(empireDesk);
   const developerTools = document.createElement("article");
   developerTools.className = "item-card developer-tools-card";
   developerTools.innerHTML = `

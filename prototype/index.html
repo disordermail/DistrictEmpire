@@ -13,9 +13,9 @@
           <p class="eyebrow">Warszawa · Offline MVP</p>
           <h1>District Empire</h1>
         </div>
-        <div class="level-badge" aria-label="Player level">
-          <span>LVL</span>
-          <strong id="playerLevelValue">1</strong>
+        <div class="header-actions">
+          <div class="level-badge" aria-label="Player level"><span>LVL</span><strong id="playerLevelValue">1</strong></div>
+          <button class="menu-trigger" id="menuTrigger" type="button" aria-label="Open company headquarters">☰</button>
         </div>
       </section>
 
@@ -38,7 +38,7 @@
         </article>
       </section>
 
-      <section class="screen active" id="screen-map" aria-labelledby="tab-map">
+      <section class="screen" id="screen-map" aria-labelledby="tab-map">
         <section class="mission-strip" id="missionStrip" aria-label="Active goals"></section>
         <section class="first-hour-panel" id="firstHourPanel" aria-label="First hour progress"></section>
         <div class="map-stage" id="mapStage" aria-label="City map"></div>
@@ -51,8 +51,8 @@
           <p id="sheetDescription">Buy a starter property, collect rent, and grow your portfolio.</p>
           <nav class="sheet-tabs" aria-label="Property sections">
             <button type="button" data-sheet-tab="overview" class="active">Overview</button>
-            <button type="button" data-sheet-tab="rent">Rent</button>
-            <button type="button" data-sheet-tab="repairs">Repairs</button>
+            <button type="button" data-sheet-tab="rent">Tenants</button>
+            <button type="button" data-sheet-tab="repairs">Maintenance</button>
           </nav>
           <div class="sheet-stats">
             <span id="sheetTier">Tier -</span>
@@ -74,7 +74,7 @@
         <div class="list" id="marketList"></div>
       </section>
 
-      <section class="screen" id="screen-portfolio" aria-labelledby="tab-portfolio">
+      <section class="screen active" id="screen-portfolio" aria-labelledby="tab-portfolio">
         <header class="screen-header">
           <p class="eyebrow">Owned assets</p>
           <h2>Portfolio</h2>
@@ -117,8 +117,8 @@
 
       <section class="screen" id="screen-ranking" aria-labelledby="tab-ranking">
         <header class="screen-header">
-          <p class="eyebrow">Company</p>
-          <h2>Reputation</h2>
+          <p class="eyebrow">Your company</p>
+          <h2>Empire</h2>
         </header>
         <div class="list" id="rankingList"></div>
       </section>
@@ -141,12 +141,26 @@
       </section>
 
       <nav class="tab-bar" aria-label="Main navigation">
-        <button class="tab" id="tab-market" type="button" data-screen="market">Invest</button>
+        <button class="tab" id="tab-map" type="button" data-screen="map">Map</button>
         <button class="tab" id="tab-portfolio" type="button" data-screen="portfolio">Portfolio<span class="nav-badge alert-badge" id="portfolioBadge" hidden>!</span></button>
-        <button class="tab map-tab active" id="tab-map" type="button" data-screen="map" aria-label="Map">⌖<span>Map</span></button>
+        <button class="tab" id="tab-ranking" type="button" data-screen="ranking">Empire</button>
         <button class="tab" id="tab-issues" type="button" data-screen="issues">Tasks<span class="nav-badge" id="issuesBadge" hidden>0</span></button>
-        <button class="tab" id="tab-ranking" type="button" data-screen="ranking">Company</button>
       </nav>
+      <section class="menu-layer" id="menuLayer" hidden>
+        <aside class="headquarters-menu" aria-label="Company headquarters">
+          <div class="menu-profile"><span>PW</span><div><strong>Paweł W.</strong><em>CEO · District Empire</em></div><button class="menu-close" id="menuClose" type="button" aria-label="Close menu">×</button></div>
+          <div class="menu-value"><span>Empire value</span><strong id="menuEmpireValue">0 PLN</strong><em>Level <b id="menuLevelValue">1</b></em></div>
+          <nav class="menu-list">
+            <button type="button" data-menu-screen="portfolio">Dashboard</button>
+            <button type="button" data-menu-screen="ranking">My Company</button>
+            <button type="button" data-menu-screen="shop">Shop & daily rewards</button>
+            <button type="button" data-menu-screen="market">Auction House</button>
+            <button type="button" data-menu-screen="ranking">Rankings</button>
+            <button type="button" data-menu-message="Events, news, achievements and friends unlock as your company grows.">Events, news & friends</button>
+            <button type="button" data-menu-message="Settings will be available with the connected account version.">Settings & help</button>
+          </nav>
+        </aside>
+      </section>
       <aside class="toast" id="toast" hidden></aside>
       <aside class="ceremony" id="ceremony" hidden></aside>
       <section class="modal-layer" id="levelModal" hidden>

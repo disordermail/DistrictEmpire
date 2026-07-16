@@ -125,6 +125,9 @@ h2 {
   padding: 5px 8px;
 }
 
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.menu-trigger { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); cursor: pointer; font-size: 20px; }
+
 .level-badge span {
   color: var(--muted);
   font-size: 10px;
@@ -562,6 +565,9 @@ h2 {
 .item-card.warning {
   background: var(--orange-soft);
 }
+
+.empire-desk { border-color: rgba(36, 94, 199, 0.32); background: var(--action-primary-soft); }
+.empire-desk h3 { margin-bottom: 12px; }
 
 .item-card.listed {
   border-color: rgba(217, 75, 95, 0.45);
@@ -1191,7 +1197,7 @@ button.focus-card {
 
 .tab-bar {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 3px;
   padding: 8px 8px 10px;
   background: rgba(255, 255, 255, 0.96);
@@ -1244,23 +1250,20 @@ button.focus-card {
   height: 18px;
 }
 
-.map-tab {
-  min-height: 66px;
-  margin-top: -28px;
-  color: white;
-  background: var(--brand);
-  border: 4px solid white;
-  border-radius: 18px;
-  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.24);
-  display: grid;
-  place-items: center;
-  gap: 0;
-  font-size: 22px;
-}
-
-.map-tab span {
-  font-size: 11px;
-}
+.menu-layer { position: absolute; inset: 0; z-index: 20; background: rgba(21, 33, 45, 0.4); }
+.headquarters-menu { width: min(88%, 360px); height: 100%; padding: 18px 14px; background: var(--panel); box-shadow: 18px 0 42px rgba(21, 33, 45, 0.22); overflow: auto; }
+.menu-profile { display: grid; grid-template-columns: 44px 1fr 36px; align-items: center; gap: 10px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.menu-profile > span { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; background: var(--action-primary-soft); color: var(--action-primary-hover); font-size: 13px; font-weight: 900; }
+.menu-profile strong, .menu-profile em { display: block; }
+.menu-profile strong { font-size: 16px; }
+.menu-profile em { margin-top: 2px; color: var(--muted); font-size: 12px; font-style: normal; }
+.menu-close { width: 36px; height: 36px; border: 0; border-radius: 8px; background: var(--disabled-bg); color: var(--muted); cursor: pointer; font-size: 22px; }
+.menu-value { display: grid; gap: 3px; padding: 16px 2px; border-bottom: 1px solid var(--line); }
+.menu-value span, .menu-value em { color: var(--muted); font-size: 12px; font-style: normal; }
+.menu-value strong { color: var(--income-strong); font-size: 23px; }
+.menu-list { display: grid; gap: 4px; padding-top: 12px; }
+.menu-list button { min-height: 46px; border: 0; border-radius: 8px; padding: 0 12px; background: transparent; color: var(--ink); text-align: left; cursor: pointer; font: inherit; font-size: 14px; font-weight: 750; }
+.menu-list button:hover { background: var(--action-primary-soft); color: var(--action-primary-hover); }
 
 .mission-strip {
   display: grid;
