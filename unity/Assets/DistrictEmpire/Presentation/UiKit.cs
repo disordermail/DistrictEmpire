@@ -15,6 +15,8 @@ namespace DistrictEmpire.Presentation
         public static VisualElement Card(string tone = "neutral")
         {
             var card = new VisualElement();
+            card.AddToClassList("de-card");
+            if (tone != "neutral") card.AddToClassList($"de-card-{tone}");
             card.style.marginBottom = 10;
             card.style.paddingTop = card.style.paddingBottom = 14;
             card.style.paddingLeft = card.style.paddingRight = 14;
@@ -27,6 +29,10 @@ namespace DistrictEmpire.Presentation
         public static Label Text(string value, int size = 14, bool bold = false, StyleColor? color = null)
         {
             var label = new Label(value);
+            label.AddToClassList("de-text");
+            if (size >= 22) label.AddToClassList("de-text-amount");
+            else if (size >= 16 && bold) label.AddToClassList("de-text-title");
+            else if (size <= 12) label.AddToClassList("de-text-muted");
             label.style.fontSize = size;
             label.style.color = color ?? Ink;
             if (bold) label.style.unityFontStyleAndWeight = UnityEngine.FontStyle.Bold;
@@ -37,6 +43,8 @@ namespace DistrictEmpire.Presentation
         public static Button Button(string title, Action action, string kind = "primary")
         {
             var button = new Button(action) { text = title };
+            button.AddToClassList("de-button");
+            button.AddToClassList($"de-button-{kind}");
             button.style.minHeight = kind == "primary" ? 52 : 44;
             button.style.marginTop = 10;
             button.style.borderTopLeftRadius = button.style.borderTopRightRadius = 10;

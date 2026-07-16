@@ -21,6 +21,9 @@ namespace DistrictEmpire.Presentation
         {
             game = new GameService(new JsonLocalGameRepository(), new GameClock());
             root = GetComponent<UIDocument>().rootVisualElement;
+            var style = Resources.Load<StyleSheet>("DistrictEmpireStyle");
+            if (style != null) root.styleSheets.Add(style);
+            root.AddToClassList("app-shell");
             root.style.flexGrow = 1;
             root.style.backgroundColor = new Color(0.94f, 0.96f, 0.98f);
             Render();
@@ -38,7 +41,8 @@ namespace DistrictEmpire.Presentation
         {
             root.Clear();
             root.Add(BuildHeader());
-            content = new ScrollView { style = { flexGrow = 1, paddingLeft = 14, paddingRight = 14, paddingTop = 10 } };
+            content = new ScrollView { style = { flexGrow = 1 } };
+            content.AddToClassList("screen-scroll");
             root.Add(content);
             if (screen == "Map") RenderMap();
             else if (screen == "Invest") RenderInvest();
@@ -50,24 +54,38 @@ namespace DistrictEmpire.Presentation
 
         private VisualElement BuildHeader()
         {
-            var header = new VisualElement { style = { flexDirection = FlexDirection.Row, justifyContent = Justify.SpaceBetween, alignItems = Align.Center, paddingLeft = 18, paddingRight = 18, paddingTop = 16, paddingBottom = 10, backgroundColor = Color.white } };
+            var header = new VisualElement();
+            header.AddToClassList("top-header");
+            var row = new VisualElement(); row.AddToClassList("header-row");
             var title = new VisualElement();
-            title.Add(UiKit.Text("DISTRICT EMPIRE", 11, true, UiKit.Muted));
+            title.Add(UiKit.Text("WARSAW · OFFLINE VERTICAL SLICE", 11, true, UiKit.Muted));
             title.Add(UiKit.Text(screen == "Portfolio" ? "Morning briefing" : screen, 24, true));
-            header.Add(title);
-            header.Add(UiKit.Button("☰", ShowMenu, "secondary"));
+            row.Add(title);
+            var controls = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
+            var level = new VisualElement(); level.AddToClassList("level-pill"); level.Add(UiKit.Text("LEVEL", 9, true, UiKit.Muted)); level.Add(UiKit.Text("1", 18, true, UiKit.Amber));
+            controls.Add(level); controls.Add(UiKit.Button("☰", ShowMenu, "secondary"));
+            row.Add(controls); header.Add(row);
+            var wallet = new VisualElement(); wallet.AddToClassList("wallet-strip");
+            wallet.Add(WalletChip("Cash", $"{game.State.Cash:N0} PLN"));
+            wallet.Add(WalletChip("Rent/day", $"{game.State.Properties.Where(p => p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent):N0} PLN"));
+            wallet.Add(WalletChip("Buildings", game.State.Properties.Count(p => p.IsOwned).ToString()));
+            wallet.Add(WalletChip("Influence", game.State.Influence.ToString()));
+            header.Add(wallet);
             return header;
+        }
+
+        private VisualElement WalletChip(string label, string value)
+        {
+            var chip = new VisualElement(); chip.AddToClassList("wallet-chip"); chip.Add(UiKit.Text(label, 10, false, UiKit.Muted)); chip.Add(UiKit.Text(value, 12, true, UiKit.Green)); return chip;
         }
 
         private VisualElement BuildNav()
         {
-            var nav = new VisualElement { style = { flexDirection = FlexDirection.Row, backgroundColor = Color.white, paddingLeft = 8, paddingRight = 8, paddingTop = 8, paddingBottom = 12 } };
+            var nav = new VisualElement(); nav.AddToClassList("bottom-nav");
             foreach (var tab in new[] { "Portfolio", "Map", "Invest", "Tasks" })
             {
                 var button = new Button(() => { screen = tab; Render(); }) { text = tab };
-                button.style.flexGrow = 1; button.style.minHeight = 54; button.style.marginLeft = button.style.marginRight = 3;
-                button.style.backgroundColor = screen == tab ? new Color(0.92f, 0.95f, 1f) : Color.white;
-                button.style.color = screen == tab ? UiKit.Blue : UiKit.Muted;
+                button.AddToClassList("nav-tab"); if (screen == tab) button.AddToClassList("nav-tab-active");
                 nav.Add(button);
             }
             return nav;
@@ -87,7 +105,8 @@ namespace DistrictEmpire.Presentation
 
         private void RenderMap()
         {
-            content.Add(UiKit.Text("What can I buy?", 16, true));
+            content.Add(UiKit.Text("What can I buy?", 20, true));
+            content.Add(UiKit.Text("Available opportunities across Warsaw. Buy early to begin the ownership transfer.", 13, false, UiKit.Muted));
             foreach (var property in game.State.Properties.Where(p => !p.IsOwned))
             {
                 var card = UiKit.Card(); card.Add(UiKit.Text($"{property.Icon}  {property.Name}", 18, true)); card.Add(UiKit.Text($"{property.District} · {property.Price:N0} PLN · Est. {property.BaseDailyRent:N0} PLN/day"));
@@ -111,7 +130,7 @@ namespace DistrictEmpire.Presentation
         {
             var tone = property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : "attention";
             var card = UiKit.Card(tone); card.Add(UiKit.Text($"{property.Icon}  {property.Name}", 18, true));
-            card.Add(UiKit.Text(Status(property), 14, true));
+            var status = UiKit.Text(Status(property), 14, true); status.AddToClassList("property-status"); card.Add(status);
             card.Add(UiKit.Text(property.Stage == PropertyStage.Occupied ? $"{property.TenantDailyRent:N0} PLN/day · {property.TenantName}" : "0 PLN income until a use is chosen"));
             card.Add(UiKit.Button("View property", () => { selectedPropertyId = property.Id; screen = "Property"; Render(); }, "secondary"));
             return card;
@@ -155,7 +174,7 @@ namespace DistrictEmpire.Presentation
 
         private void ShowMenu()
         {
-            var menu = UiKit.Card(); menu.style.position = Position.Absolute; menu.style.top = 60; menu.style.right = 12; menu.style.width = 280;
+            var menu = UiKit.Card(); menu.AddToClassList("menu-panel");
             menu.Add(UiKit.Text("Paweł W. · Company", 17, true));
             foreach (var item in new[] { "Company", "Finances", "Employees", "Skills", "Auctions", "Rankings", "Events & News", "Shop", "Friends", "Settings & Help" })
                 menu.Add(UiKit.Button(item, () => { root.Remove(menu); if (item == "Auctions") { screen = "Invest"; Render(); } }, "secondary"));
