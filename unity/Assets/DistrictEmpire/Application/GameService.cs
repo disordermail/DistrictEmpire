@@ -84,6 +84,17 @@ namespace DistrictEmpire.Application
             repository.Save(State);
         }
 
+        public bool SpeedUpNotary(string propertyId)
+        {
+            const int influenceCost = 5;
+            var property = Find(propertyId);
+            if (property == null || property.Stage != PropertyStage.Notary || State.Influence < influenceCost) return false;
+            State.Influence -= influenceCost;
+            property.NotaryCompleteAtUtcTicks = DateTime.UtcNow.Ticks;
+            Tick();
+            return true;
+        }
+
         public void PublishListing(string propertyId)
         {
             var property = Find(propertyId);

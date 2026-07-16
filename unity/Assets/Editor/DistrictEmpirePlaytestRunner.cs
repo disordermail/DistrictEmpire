@@ -22,9 +22,8 @@ namespace DistrictEmpire.Editor
             var studio = RequireProperty(service, "riverside");
             Require(service.Buy(studio.Id), "Purchase action failed.");
             Require(studio.Stage == PropertyStage.Notary, "Purchase did not start notary transfer.");
-            studio.NotaryCompleteAtUtcTicks = DateTime.UtcNow.AddSeconds(-1).Ticks;
-            service.Tick();
-            Require(studio.Stage == PropertyStage.ChoosingUse, "Notary timer did not complete.");
+            Require(service.SpeedUpNotary(studio.Id), "Notary speed-up action failed.");
+            Require(studio.Stage == PropertyStage.ChoosingUse, "Notary speed-up did not complete the transfer.");
             service.ChooseUse(studio.Id, PropertyUse.Business);
             Require(studio.Stage == PropertyStage.Available, "Business use choice failed.");
             service.PublishListing(studio.Id);

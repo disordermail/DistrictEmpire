@@ -25,6 +25,11 @@
 .de-button-primary { background-color: #245ec7; color: #ffffff; min-height: 52px; border-radius: 12px; }
 .de-button-income { background-color: #07875f; color: #ffffff; min-height: 52px; border-radius: 12px; }
 .de-button-secondary { background-color: #ffffff; color: #1b4faf; border-width: 1px; border-color: #d9e1e8; }
+.de-button-waiting { background-color: #b66709; color: #ffffff; min-height: 52px; border-radius: 10px; }
+.de-button-danger { background-color: #c93f55; color: #ffffff; min-height: 52px; border-radius: 10px; }
+.de-button-tertiary { background-color: rgba(0,0,0,0); color: #1b4faf; border-width: 0; }
+.de-button-locked { background-color: #eef2f5; color: #8795a3; border-width: 1px; border-color: #d9e0e6; }
+.de-button-locked:disabled { opacity: 1; color: #8795a3; }
 .de-button-icon { width: 44px; min-width: 44px; height: 44px; min-height: 44px; margin-top: 0; background-color: #ffffff; color: #15212d; border-width: 1px; border-color: #dce4ea; font-size: 20px; }
 .de-button-filter { flex-grow: 1; min-height: 34px; margin-top: 0; background-color: #ffffff; color: #596a79; border-width: 1px; border-color: #dce4ea; font-size: 11px; }
 .filter-active { background-color: #eaf1ff; color: #1b4faf; border-color: #b4caef; }
@@ -66,6 +71,17 @@
 .card-top { flex-direction: row; justify-content: space-between; align-items: flex-start; }
 .tier-badge { padding: 5px 7px; background-color: #fff8e4; color: #a97816; border-radius: 10px; -unity-font-style: bold; }
 .property-bottom { flex-direction: row; justify-content: space-between; margin-top: 10px; padding-top: 9px; border-top-width: 1px; border-top-color: #dce4ea; }
+.portfolio-group-title { margin-left: 3px; margin-top: 12px; margin-bottom: 5px; }
+.status-chip { align-self: flex-start; margin-top: 8px; margin-bottom: 4px; padding: 6px 9px; border-radius: 12px; }
+.status-income { background-color: #e5f6ef; color: #046c4c; }
+.status-waiting { background-color: #fff3da; color: #8b4d05; }
+.status-problem { background-color: #fdecef; color: #a82e43; }
+.status-decision { background-color: #fff0e5; color: #9a3e0d; }
+.status-managed { background-color: #eaf1ff; color: #1b4faf; }
+.map-pin-problem { border-color: #c93f55; background-color: #fdecef; }
+.map-pin-waiting { border-color: #b66709; background-color: #fff3da; }
+.map-pin-locked { border-color: #8795a3; background-color: #eef2f5; color: #8795a3; }
+.map-pin-dream { border-color: #7c5ce5; background-color: #f1edff; color: #6346c9; }
 .news-card { padding: 13px; }
 .news-line { flex-direction: row; align-items: center; gap: 8px; margin-top: 8px; }
 .news-dot { width: 9px; height: 9px; min-width: 9px; background-color: #245ec7; border-radius: 6px; }
