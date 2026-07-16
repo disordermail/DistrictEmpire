@@ -126,7 +126,8 @@ h2 {
 }
 
 .header-actions { display: flex; align-items: center; gap: 8px; }
-.menu-trigger { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); cursor: pointer; font-size: 20px; }
+.menu-trigger { position: relative; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--ink); cursor: pointer; font-size: 20px; }
+.menu-badge { position: absolute; top: -5px; right: -5px; min-width: 17px; height: 17px; display: grid; place-items: center; border: 2px solid white; border-radius: 999px; background: var(--danger); color: white; font-size: 10px; font-weight: 900; }
 
 .level-badge span {
   color: var(--muted);
@@ -1262,8 +1263,13 @@ button.focus-card {
 .menu-value span, .menu-value em { color: var(--muted); font-size: 12px; font-style: normal; }
 .menu-value strong { color: var(--income-strong); font-size: 23px; }
 .menu-list { display: grid; gap: 4px; padding-top: 12px; }
+.menu-list p { margin: 12px 10px 2px; color: var(--tertiary); font-size: 11px; font-weight: 900; text-transform: uppercase; }
 .menu-list button { min-height: 46px; border: 0; border-radius: 8px; padding: 0 12px; background: transparent; color: var(--ink); text-align: left; cursor: pointer; font: inherit; font-size: 14px; font-weight: 750; }
 .menu-list button:hover { background: var(--action-primary-soft); color: var(--action-primary-hover); }
+
+.category-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 10px; }
+.category-chips button { min-height: 38px; flex: 0 0 auto; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--muted); cursor: pointer; font: inherit; font-size: 12px; font-weight: 800; }
+.category-chips button.active { border-color: rgba(36, 94, 199, 0.3); background: var(--action-primary-soft); color: var(--action-primary-hover); }
 
 .mission-strip {
   display: grid;

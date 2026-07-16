@@ -135,6 +135,8 @@ const defaultState = {
   conditions: { "mokotow-starter": 72 },
   propertyLevels: {},
   propertyUseModes: {},
+  marketCategory: "all",
+  companyView: "overview",
   npcInvestors: {},
   npcOwnership: {},
   npcPropertyStates: {},
@@ -229,6 +231,9 @@ const infoPopover = document.querySelector("#infoPopover");
 const menuLayer = document.querySelector("#menuLayer");
 const menuEmpireValue = document.querySelector("#menuEmpireValue");
 const menuLevelValue = document.querySelector("#menuLevelValue");
+const menuBadge = document.querySelector("#menuBadge");
+const companyTitle = document.querySelector("#companyTitle");
+const companyEyebrow = document.querySelector("#companyEyebrow");
 
 document.querySelector("#resetButton").addEventListener("click", () => {
   state = createDefaultState();
@@ -248,6 +253,24 @@ document.querySelectorAll("[data-menu-screen]").forEach((button) => {
     showScreen(button.dataset.menuScreen);
   });
 });
+document.querySelectorAll("[data-menu-invest]").forEach((button) => {
+  button.addEventListener("click", () => {
+    menuLayer.hidden = true;
+    state.marketCategory = button.dataset.menuInvest;
+    saveState();
+    render();
+    showScreen("market");
+  });
+});
+document.querySelectorAll("[data-menu-company]").forEach((button) => {
+  button.addEventListener("click", () => {
+    menuLayer.hidden = true;
+    state.companyView = button.dataset.menuCompany;
+    saveState();
+    render();
+    showScreen("ranking");
+  });
+});
 document.querySelectorAll("[data-menu-message]").forEach((button) => {
   button.addEventListener("click", () => {
     menuLayer.hidden = true;
@@ -264,7 +287,12 @@ sheetCloseButton.addEventListener("click", () => {
   render();
 });
 document.querySelector("#propertyBackButton").addEventListener("click", () => showScreen("portfolio"));
-document.querySelector("#shopBackButton").addEventListener("click", () => showScreen("ranking"));
+document.querySelector("#shopBackButton").addEventListener("click", () => {
+  state.companyView = "overview";
+  saveState();
+  render();
+  showScreen("ranking");
+});
 document.querySelector("#dailyRewardButton").addEventListener("click", claimDailyReward);
 document.querySelector("#grantCashButton").addEventListener("click", () => {
   state.cash += 10000;
@@ -304,6 +332,11 @@ tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
     if (tab.dataset.screen === "map") {
       state.mapSheetOpen = false;
+      saveState();
+      render();
+    }
+    if (tab.dataset.screen === "market") {
+      state.marketCategory = "all";
       saveState();
       render();
     }
@@ -372,6 +405,7 @@ function renderStatus() {
   document.querySelector("#influenceValue").textContent = String(state.influence);
   document.querySelector("#playerLevelValue").textContent = String(state.playerLevel);
   menuLevelValue.textContent = String(state.playerLevel);
+  menuBadge.hidden = state.dailyRewardClaimedDay === state.day;
   menuEmpireValue.textContent = formatMoney(state.cash + ownedProperties.reduce((total, property) => total + getSuggestedSalePrice(property), 0));
   document.querySelector("#homeRentValue").textContent = formatMoney(homeRent);
   document.querySelector("#shopRentValue").textContent = formatMoney(shopRent);
@@ -479,13 +513,13 @@ function getTutorialGuide(step) {
     collect: { title: "First rent is ready", detail: "Maria's payment is waiting in your Portfolio.", cta: "Collect rent" },
     repair: { title: "A small repair needs you", detail: "Maria reported a broken light. Keep your first tenant happy.", cta: "Review repair" },
     expand: { title: "Ready to expand?", detail: "One affordable apartment is highlighted on the map.", cta: "Buy another property" },
-    notary: { title: "Paperwork is in progress", detail: "In this prototype, advance the day to receive the notary handover.", cta: "Advance day" },
+    notary: { title: "Paperwork is in progress", detail: "Ownership transfer completes tomorrow. Check the property timeline for progress.", cta: "View timeline" },
     handover: { title: "Keys are ready", detail: "Choose whether to renovate or advertise first.", cta: "View property" },
     listing: { title: "Find your first tenant", detail: "Publish a listing to start attracting people.", cta: "Create listing" },
-    applications: { title: "Watch interest build", detail: "Advance the day to receive views, viewings and applications.", cta: "Advance day" },
+    applications: { title: "Watch interest build", detail: "Applications arrive as views and visits build. Expected within 8-18 hours.", cta: "View listing" },
     tenant: { title: "Choose a person", detail: "Compare stories and offers before you sign.", cta: "Review applicants" },
     lease: { title: "Agreement prepared", detail: "Sign the first lease to arrange key handover.", cta: "Review lease" },
-    rent: { title: "First rent is coming", detail: "Advance the day, then collect the transfer in Portfolio.", cta: "Advance day" },
+    rent: { title: "First rent is coming", detail: "The first transfer is scheduled for tomorrow. Your Portfolio will notify you when it is ready.", cta: "View portfolio" },
     tasks: { title: "Care for your property", detail: "Resolve your first task to protect the new lease.", cta: "Open Tasks" },
     ranking: { title: "Meet the competition", detail: "See where your company stands in Warsaw.", cta: "View Company" },
     dream: { title: "Set tomorrow's goal", detail: "Preview the next-tier property waiting for you.", cta: "Browse Invest" }
@@ -502,9 +536,12 @@ function handleTutorialAction(step) {
     state.selectedId = expansionId;
     state.mapSheetOpen = false;
     showScreen("map");
-  } else if (["notary", "applications", "rent"].includes(step)) {
-    simulateDay();
-    return;
+  } else if (step === "notary") {
+    openPropertyInfo(expansionId);
+  } else if (step === "applications") {
+    openPropertyInfo(expansionId);
+  } else if (step === "rent") {
+    showScreen("portfolio");
   } else if (step === "dream") {
     showScreen("market");
     advanceTutorial("complete");
@@ -552,11 +589,7 @@ function isTutorialComplete() {
 function renderNavigationGates() {
   const tutorialActive = state.onboardingComplete && !isTutorialComplete();
   const tasksTab = document.querySelector("#tab-issues");
-  const companyTab = document.querySelector("#tab-ranking");
-  const hasLease = Object.keys(state.tenants).length > 0;
-
   tasksTab.disabled = tutorialActive && !["repair", "tasks", "ranking", "dream"].includes(state.tutorialState.currentStep);
-  companyTab.disabled = tutorialActive && !hasLease;
 }
 
 function renderActivityFeed() {
@@ -696,8 +729,17 @@ function renderMarket() {
   const playerListings = properties.filter((property) => state.owned.includes(property.id) && state.listedForSale[property.id]);
   const listings = [...playerListings, ...available];
 
-  marketList.innerHTML = "";
+  marketList.innerHTML = `<nav class="category-chips" aria-label="Invest categories"><button type="button" data-market-category="all" class="${state.marketCategory === "all" ? "active" : ""}">All opportunities</button><button type="button" data-market-category="auctions" class="${state.marketCategory === "auctions" ? "active" : ""}">Auctions</button></nav>`;
+  marketList.querySelectorAll("[data-market-category]").forEach((button) => button.addEventListener("click", () => {
+    state.marketCategory = button.dataset.marketCategory;
+    saveState();
+    render();
+  }));
   marketList.appendChild(createAuctionCard());
+  if (state.marketCategory === "auctions") {
+    marketList.insertAdjacentHTML("beforeend", `<article class="item-card"><h3>Live auctions</h3><p>Competitive opportunities refresh as the city market moves. NPC investors can bid on higher-tier properties.</p></article>`);
+    return;
+  }
   marketList.insertAdjacentHTML("beforeend", `<p class="list-divider">Open opportunities</p>`);
   marketList.insertAdjacentHTML("beforeend", listings.length
     ? ""
@@ -1267,6 +1309,8 @@ function renderRanking() {
     .filter((property) => state.owned.includes(property.id))
     .reduce((total, property) => total + getSuggestedSalePrice(property), 0);
 
+  companyTitle.textContent = state.companyView === "rankings" ? "Rankings" : "Company";
+  companyEyebrow.textContent = state.companyView === "rankings" ? "Warsaw investors" : "Your company";
   const rows = [
     ...npcProfiles.map((profile) => ({ name: profile.company, score: state.npcInvestors[profile.id]?.netWorth || profile.budget, subtitle: `${profile.archetype} · NPC investor` })),
     ...rivals,
@@ -1283,7 +1327,7 @@ function renderRanking() {
     <h3>District Empire</h3>
     <div class="item-meta"><span>${formatMoney(activeIncome)} daily income</span><span>${state.owned.length} properties</span><span>${repairs} repairs</span><span>Level ${state.playerLevel}</span></div>
   `;
-  rankingList.appendChild(empireDesk);
+  if (state.companyView === "overview") rankingList.appendChild(empireDesk);
   const developerTools = document.createElement("article");
   developerTools.className = "item-card developer-tools-card";
   developerTools.innerHTML = `
@@ -1292,7 +1336,11 @@ function renderRanking() {
     <button class="secondary-action" type="button">Open tools</button>
   `;
   developerTools.querySelector("button").addEventListener("click", () => showScreen("shop"));
-  rankingList.appendChild(developerTools);
+  if (state.companyView === "overview") rankingList.appendChild(developerTools);
+  if (state.companyView === "overview") {
+    rankingList.insertAdjacentHTML("beforeend", `<article class="item-card"><h3>Organization</h3><p>Finances, employees, skills, agents and lawyers unlock as your company grows.</p></article>`);
+    return;
+  }
   rows.forEach((row, index) => {
     const card = document.createElement("article");
     card.className = "item-card";
@@ -2510,6 +2558,8 @@ function normalizeState(nextState = state, assign = true) {
   nextState.conditions = nextState.conditions && typeof nextState.conditions === "object" ? nextState.conditions : {};
   nextState.propertyLevels = nextState.propertyLevels && typeof nextState.propertyLevels === "object" ? nextState.propertyLevels : {};
   nextState.propertyUseModes = nextState.propertyUseModes && typeof nextState.propertyUseModes === "object" ? nextState.propertyUseModes : {};
+  nextState.marketCategory = ["all", "auctions"].includes(nextState.marketCategory) ? nextState.marketCategory : "all";
+  nextState.companyView = ["overview", "rankings"].includes(nextState.companyView) ? nextState.companyView : "overview";
   nextState.npcInvestors = { ...createNpcInvestors(), ...(nextState.npcInvestors && typeof nextState.npcInvestors === "object" ? nextState.npcInvestors : {}) };
   nextState.npcOwnership = nextState.npcOwnership && typeof nextState.npcOwnership === "object" ? nextState.npcOwnership : {};
   nextState.npcPropertyStates = nextState.npcPropertyStates && typeof nextState.npcPropertyStates === "object" ? nextState.npcPropertyStates : {};

@@ -15,7 +15,7 @@
         </div>
         <div class="header-actions">
           <div class="level-badge" aria-label="Player level"><span>LVL</span><strong id="playerLevelValue">1</strong></div>
-          <button class="menu-trigger" id="menuTrigger" type="button" aria-label="Open company headquarters">☰</button>
+          <button class="menu-trigger" id="menuTrigger" type="button" aria-label="Open company menu">☰<span class="menu-badge" id="menuBadge" hidden>!</span></button>
         </div>
       </section>
 
@@ -117,8 +117,8 @@
 
       <section class="screen" id="screen-ranking" aria-labelledby="tab-ranking">
         <header class="screen-header">
-          <p class="eyebrow">Your company</p>
-          <h2>Empire</h2>
+          <p class="eyebrow" id="companyEyebrow">Your company</p>
+          <h2 id="companyTitle">Company</h2>
         </header>
         <div class="list" id="rankingList"></div>
       </section>
@@ -141,22 +141,28 @@
       </section>
 
       <nav class="tab-bar" aria-label="Main navigation">
-        <button class="tab" id="tab-map" type="button" data-screen="map">Map</button>
         <button class="tab" id="tab-portfolio" type="button" data-screen="portfolio">Portfolio<span class="nav-badge alert-badge" id="portfolioBadge" hidden>!</span></button>
-        <button class="tab" id="tab-ranking" type="button" data-screen="ranking">Empire</button>
+        <button class="tab" id="tab-map" type="button" data-screen="map">Map</button>
+        <button class="tab" id="tab-market" type="button" data-screen="market">Invest</button>
         <button class="tab" id="tab-issues" type="button" data-screen="issues">Tasks<span class="nav-badge" id="issuesBadge" hidden>0</span></button>
       </nav>
       <section class="menu-layer" id="menuLayer" hidden>
         <aside class="headquarters-menu" aria-label="Company headquarters">
           <div class="menu-profile"><span>PW</span><div><strong>Paweł W.</strong><em>CEO · District Empire</em></div><button class="menu-close" id="menuClose" type="button" aria-label="Close menu">×</button></div>
-          <div class="menu-value"><span>Empire value</span><strong id="menuEmpireValue">0 PLN</strong><em>Level <b id="menuLevelValue">1</b></em></div>
+          <div class="menu-value"><span>Company value</span><strong id="menuEmpireValue">0 PLN</strong><em>Level <b id="menuLevelValue">1</b></em></div>
           <nav class="menu-list">
-            <button type="button" data-menu-screen="portfolio">Dashboard</button>
-            <button type="button" data-menu-screen="ranking">My Company</button>
-            <button type="button" data-menu-screen="shop">Shop & daily rewards</button>
-            <button type="button" data-menu-screen="market">Auction House</button>
-            <button type="button" data-menu-screen="ranking">Rankings</button>
-            <button type="button" data-menu-message="Events, news, achievements and friends unlock as your company grows.">Events, news & friends</button>
+            <p>Your company</p>
+            <button type="button" data-menu-company="overview">Company</button>
+            <button type="button" data-menu-message="Finances are tracked in Company as your portfolio grows.">Finances</button>
+            <button type="button" data-menu-message="Employees unlock with larger commercial operations.">Employees</button>
+            <button type="button" data-menu-message="Skills unlock as your company reaches new levels.">Skills</button>
+            <p>Opportunities</p>
+            <button type="button" data-menu-invest="auctions">Auctions</button>
+            <button type="button" data-menu-company="rankings">Rankings</button>
+            <button type="button" data-menu-message="Events and news unlock as your company grows.">Events & news</button>
+            <p>Account</p>
+            <button type="button" data-menu-screen="shop">Shop</button>
+            <button type="button" data-menu-message="Friends arrive with the connected account version.">Friends</button>
             <button type="button" data-menu-message="Settings will be available with the connected account version.">Settings & help</button>
           </nav>
         </aside>
