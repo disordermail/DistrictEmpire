@@ -16,6 +16,7 @@ namespace DistrictEmpire.Presentation
         private VisualElement content;
         private string screen = "Portfolio";
         private string selectedPropertyId = "old-town";
+        private bool menuOpen;
         private float nextClockRefresh;
 
         private void Awake()
@@ -34,7 +35,7 @@ namespace DistrictEmpire.Presentation
             if (Time.unscaledTime < nextClockRefresh) return;
             nextClockRefresh = Time.unscaledTime + 1f;
             game.Tick();
-            if (screen == "Portfolio" || screen == "Property") Render();
+            if (!menuOpen && (screen == "Portfolio" || screen == "Property")) Render();
         }
 
         private void Render()
@@ -342,8 +343,10 @@ namespace DistrictEmpire.Presentation
 
         private void ShowMenu()
         {
+            if (menuOpen) return;
+            menuOpen = true;
             var overlay = new VisualElement(); overlay.AddToClassList("menu-overlay");
-            overlay.RegisterCallback<ClickEvent>(evt => { if (evt.target == overlay) root.Remove(overlay); });
+            overlay.RegisterCallback<ClickEvent>(evt => { if (evt.target == overlay) CloseMenu(overlay); });
             var menu = new VisualElement(); menu.AddToClassList("company-menu");
             var profile = UiKit.Row("menu-profile"); profile.Add(UiKit.Text("PW", 16, true, UiKit.Blue));
             var profileText = new VisualElement(); profileText.Add(UiKit.Text("Paweł W.", 17, true)); profileText.Add(UiKit.Text("CEO · District Empire", 11, false, UiKit.Muted)); profile.Add(profileText); menu.Add(profile);
@@ -362,11 +365,18 @@ namespace DistrictEmpire.Presentation
                 var item = UiKit.Button(entry, () =>
                 {
                     root.Remove(overlay);
+                    menuOpen = false;
                     if (entry == "Company" || entry == "Finances" || entry == "Employees" || entry == "Skills") { screen = "Company"; Render(); }
                     else if (entry == "Auctions") { screen = "Invest"; Render(); ShowToast("Auctions category selected."); }
                     else ShowToast(entry + " is coming in the next local prototype pass.");
                 }, "menu"); menu.Add(item);
             }
+        }
+
+        private void CloseMenu(VisualElement overlay)
+        {
+            menuOpen = false;
+            if (overlay.parent != null) overlay.parent.Remove(overlay);
         }
 
         private void ShowToast(string message)
