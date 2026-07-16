@@ -377,6 +377,7 @@ namespace DistrictEmpire.Presentation
             var influence = UiKit.Card("briefing"); influence.AddToClassList("shop-card"); influence.Add(UiKit.Text("INFLUENCE PACK", 10, true, UiKit.Blue)); influence.Add(UiKit.Text("+5 influence", 19, true)); influence.Add(UiKit.Text("Useful for speeding up notary documents.", 12, false, UiKit.Muted));
             influence.Add(UiKit.Button("Buy for 600 PLN", () => { if (game.BuyInfluence()) { Render(); ShowToast("Influence added to your company."); } else ShowToast("You need 600 PLN."); }, "primary")); content.Add(influence);
 
+            var reset = UiKit.Button("Reset local profile", ShowResetConfirmation, "danger"); reset.AddToClassList("reset-profile-button"); content.Add(reset);
             content.Add(UiKit.Button("Back to Portfolio", () => { screen = "Portfolio"; Render(); }, "secondary"));
         }
 
@@ -437,6 +438,15 @@ namespace DistrictEmpire.Presentation
             var overlay = new VisualElement(); overlay.AddToClassList("celebration-overlay");
             var card = UiKit.Card("income"); card.AddToClassList("celebration-card"); card.Add(UiKit.Text(title, 11, true, UiKit.Green)); card.Add(UiKit.Text("+" + Money(620), 27, true)); card.Add(UiKit.Text(rewards, 13, true, UiKit.Green)); card.Add(UiKit.Text(message, 12, false, UiKit.Muted));
             card.Add(UiKit.Button("Continue", () => root.Remove(overlay), "income")); overlay.Add(card); root.Add(overlay);
+        }
+
+        private void ShowResetConfirmation()
+        {
+            var overlay = new VisualElement(); overlay.AddToClassList("celebration-overlay");
+            var card = UiKit.Card("attention"); card.AddToClassList("celebration-card");
+            card.Add(UiKit.Text("RESET LOCAL PROFILE?", 11, true, UiKit.Amber)); card.Add(UiKit.Text("Start District Empire again", 20, true)); card.Add(UiKit.Text("This deletes the local cash, properties, shop rewards and lifecycle progress on this device.", 12, false, UiKit.Muted));
+            card.Add(UiKit.Button("Reset profile", () => { game.ResetProgress(); root.Remove(overlay); screen = "Portfolio"; Render(); ShowCelebration("PROFILE RESET", "Fresh start", "Maria and your starter apartment are ready again."); }, "danger"));
+            card.Add(UiKit.Button("Keep my progress", () => root.Remove(overlay), "secondary")); overlay.Add(card); root.Add(overlay);
         }
 
         private VisualElement PropertyCard(Property property, bool showAction)

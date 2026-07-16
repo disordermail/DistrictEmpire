@@ -116,6 +116,13 @@ namespace DistrictEmpire.Application
             return true;
         }
 
+        public void ResetProgress()
+        {
+            State = CreateNewGame();
+            EnsureLivingWorldContent();
+            repository.Save(State);
+        }
+
         public void PublishListing(string propertyId)
         {
             var property = Find(propertyId);

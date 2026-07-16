@@ -38,7 +38,12 @@ namespace DistrictEmpire.Editor
             Require(studio.Stage == PropertyStage.Occupied, "Tenant selection failed.");
             Require(!string.IsNullOrEmpty(studio.TenantStory), "Selected tenant story is missing.");
 
-            Debug.Log("District Empire core playtest passed: rent, shop, repair, buy, notary, use choice, listing, applications and tenant selection.");
+            service.ResetProgress();
+            Require(service.State.Cash == 32000, "Profile reset did not restore starter cash.");
+            Require(service.State.RentReady == 620, "Profile reset did not restore starter rent.");
+            Require(!service.State.DailyRewardClaimed, "Profile reset did not restore daily reward.");
+
+            Debug.Log("District Empire core playtest passed: rent, shop, repair, buy, notary, use choice, listing, tenant selection and reset.");
         }
 
         private static Property RequireProperty(GameService service, string id)
