@@ -8,7 +8,7 @@
 .level-pill-value { color: #a97816; font-size: 18px; -unity-font-style: bold; }
 .header-controls { flex-direction: row; align-items: center; gap: 8px; }
 .wallet-strip { flex-direction: row; gap: 7px; margin-top: 12px; }
-.wallet-chip { flex-grow: 1; min-width: 0; padding: 8px 7px; background-color: #f7fafc; border-width: 1px; border-color: #dce4ea; border-radius: 16px; }
+.wallet-chip { flex-grow: 1; min-width: 0; min-height: 58px; justify-content: center; padding: 8px 7px; overflow: hidden; background-color: #f7fafc; border-width: 1px; border-color: #dce4ea; border-radius: 16px; }
 .wallet-chip-label { color: #596a79; font-size: 10px; }
 .wallet-chip-value { color: #07875f; font-size: 12px; -unity-font-style: bold; }
 .screen-scroll { flex-grow: 1; padding-left: 14px; padding-right: 14px; padding-top: 14px; padding-bottom: 14px; background-color: #edf3f7; }

@@ -34,15 +34,16 @@ namespace DistrictEmpire.Presentation
         {
             if (Time.unscaledTime < nextClockRefresh) return;
             nextClockRefresh = Time.unscaledTime + 1f;
+            var lifecycleBefore = LifecycleSignature();
             game.Tick();
-            if (!menuOpen && (screen == "Portfolio" || screen == "Property")) Render();
+            if (!menuOpen && lifecycleBefore != LifecycleSignature()) Render();
         }
 
         private void Render()
         {
             root.Clear();
             root.Add(BuildHeader());
-            content = new ScrollView { name = "ScreenContent" };
+            content = new ScrollView { name = "ScreenContent", verticalScrollerVisibility = ScrollerVisibility.Hidden };
             content.AddToClassList("screen-scroll");
             root.Add(content);
             switch (screen)
@@ -86,7 +87,8 @@ namespace DistrictEmpire.Presentation
         private VisualElement WalletChip(string label, string value)
         {
             var chip = new VisualElement(); chip.AddToClassList("wallet-chip");
-            chip.Add(UiKit.Text(label, 10, false, UiKit.Muted)); chip.Add(UiKit.Text(value, 12, true, UiKit.Green));
+            chip.Add(UiKit.Text(label, 10, false, UiKit.Muted));
+            var amount = UiKit.Text(value, 11, true, UiKit.Green); amount.style.whiteSpace = WhiteSpace.NoWrap; chip.Add(amount);
             return chip;
         }
 
@@ -444,6 +446,7 @@ namespace DistrictEmpire.Presentation
         private int BusinessRent() => game.State.Properties.Where(p => p.IsOwned && p.Use == PropertyUse.Business && p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent);
         private int TaskCount() => game.State.Properties.Count(p => p.IsOwned && p.Condition < 90);
         private int CompanyValue() => game.State.Properties.Where(p => p.IsOwned).Sum(p => p.Price) + game.State.Cash;
+        private string LifecycleSignature() => string.Join("|", game.State.Properties.Where(property => property.IsOwned).Select(property => property.Id + ":" + property.Stage + ":" + property.Applicants.Count));
         private static string Money(int value) => value.ToString("N0") + " PLN";
         private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary ? 1 : property.Condition < 90 ? 2 : 3;
         private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : "Choose a use and advertise to start earning";
