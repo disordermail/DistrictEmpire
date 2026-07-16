@@ -4,7 +4,17 @@ using System.Collections.Generic;
 namespace DistrictEmpire.Domain
 {
     public enum PropertyUse { None, Residential, Business }
-    public enum PropertyStage { Occupied, Available, Notary, ChoosingUse, Listing, Applications }
+    public enum PropertyStage { Occupied, Available, Notary, ChoosingUse, Listing, Applications, CancellingContract, ForSale }
+
+    [Serializable]
+    public sealed class CityEvent
+    {
+        public string Id;
+        public string Title;
+        public string Detail;
+        public string Reward;
+        public bool Claimed;
+    }
 
     [Serializable]
     public sealed class Applicant
@@ -44,6 +54,8 @@ namespace DistrictEmpire.Domain
         public int BuildingTotalUnits;
         public long NotaryCompleteAtUtcTicks;
         public long ListingAvailableAtUtcTicks;
+        public long ContractEndAtUtcTicks;
+        public int SalePrice;
         public List<Applicant> Applicants = new();
     }
 
@@ -59,5 +71,6 @@ namespace DistrictEmpire.Domain
         public int RentReady;
         public long LastClockUtcTicks;
         public List<Property> Properties = new();
+        public List<CityEvent> Events = new();
     }
 }

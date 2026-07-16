@@ -54,6 +54,7 @@ namespace DistrictEmpire.Presentation
                 case "Property": RenderProperty(); break;
                 case "Company": RenderCompany(); break;
                 case "Shop": RenderShop(); break;
+                case "Events": RenderEvents(); break;
                 default: RenderPortfolio(); break;
             }
             root.Add(BuildNav());
@@ -149,7 +150,7 @@ namespace DistrictEmpire.Presentation
             content.Add(SectionHeading("YOUR PORTFOLIO", owned.Count == 0 ? "Build your first asset" : "Act on the most important property first"));
             AddPropertyGroup("NEEDS A DECISION", owned.Where(p => p.Stage == PropertyStage.Applications || p.Stage == PropertyStage.ChoosingUse).ToList());
             AddPropertyGroup("NEEDS ATTENTION", owned.Where(p => p.Condition < 90).ToList());
-            AddPropertyGroup("WAITING", owned.Where(p => p.Stage == PropertyStage.Notary || p.Stage == PropertyStage.Listing).ToList());
+            AddPropertyGroup("WAITING", owned.Where(p => p.Stage == PropertyStage.Notary || p.Stage == PropertyStage.Listing || p.Stage == PropertyStage.CancellingContract || p.Stage == PropertyStage.ForSale).ToList());
             AddPropertyGroup("GENERATING INCOME", owned.Where(p => p.Stage == PropertyStage.Occupied).ToList());
             if (owned.Count == 0) content.Add(EmptyCard("No properties yet", "Open Map to find your first building."));
         }
@@ -309,6 +310,16 @@ namespace DistrictEmpire.Presentation
             {
                 content.Add(FlowCard("ADVERTISEMENT LIVE", game.Countdown(property), "Views and visits are growing. Applications will arrive soon."));
             }
+            else if (property.Stage == PropertyStage.CancellingContract)
+            {
+                content.Add(FlowCard("CONTRACT ENDING", game.Countdown(property), "The tenant has been notified. The property can be sold once it is vacant."));
+            }
+            else if (property.Stage == PropertyStage.ForSale)
+            {
+                var sale = FlowCard("ON THE MARKET", Money(property.SalePrice), "City Bank has made a local offer for your vacant property.");
+                var saleValue = property.SalePrice;
+                sale.Add(UiKit.Button("Accept sale offer", () => { if (game.AcceptSaleOffer(property.Id)) { screen = "Portfolio"; Render(); ShowCelebration("PROPERTY SOLD", "+" + Money(saleValue), "Sale completed. Your cash and company XP increased."); } }, "income")); content.Add(sale);
+            }
             else if (property.Stage == PropertyStage.Applications)
             {
                 content.Add(SectionHeading("APPLICATIONS WAITING", "Choose a tenant"));
@@ -323,6 +334,11 @@ namespace DistrictEmpire.Presentation
             {
                 var occupied = FlowCard("OCCUPIED", property.TenantName + " · " + property.TenantRole, property.TenantStory + "\nRelationship " + property.Relationship + "/100 · Next payment tomorrow");
                 if (property.Condition < 90) occupied.Add(UiKit.Button("Maintain property", () => { game.Repair(property.Id); Render(); }, "secondary")); content.Add(occupied);
+                occupied.Add(UiKit.Button("End tenancy", () => { if (game.StartContractCancellation(property.Id)) { Render(); ShowToast("Contract cancellation started. The tenant has been notified."); } }, "danger"));
+            }
+            if (property.IsOwned && property.Stage == PropertyStage.Available)
+            {
+                var saleOption = UiKit.Card("neutral"); saleOption.Add(UiKit.Text("SELL THIS PROPERTY", 10, true, UiKit.Muted)); saleOption.Add(UiKit.Text("Vacant properties can be put on the market.", 12, false, UiKit.Muted)); saleOption.Add(UiKit.Button("Put property on market", () => { if (game.ListForSale(property.Id)) { Render(); ShowToast("Property is now listed for sale."); } }, "secondary")); content.Add(saleOption);
             }
             if (property.IsOwned) content.Add(BuildingCollectionCard(property));
             content.Add(UiKit.Button("Back to portfolio", () => { screen = "Portfolio"; Render(); }, "secondary"));
@@ -381,6 +397,20 @@ namespace DistrictEmpire.Presentation
             content.Add(UiKit.Button("Back to Portfolio", () => { screen = "Portfolio"; Render(); }, "secondary"));
         }
 
+        private void RenderEvents()
+        {
+            content.Add(SectionHeading("CITY EVENTS", "What happened in Warsaw?"));
+            content.Add(UiKit.Text("Claim one small company boost from each current city event.", 12, false, UiKit.Muted));
+            foreach (var cityEvent in game.State.Events)
+            {
+                var card = UiKit.Card(cityEvent.Claimed ? "neutral" : "waiting"); card.AddToClassList("event-card");
+                card.Add(UiKit.Text(cityEvent.Claimed ? "COMPLETED" : "CITY EVENT", 10, true, cityEvent.Claimed ? UiKit.Muted : UiKit.Amber)); card.Add(UiKit.Text(cityEvent.Title, 18, true)); card.Add(UiKit.Text(cityEvent.Detail, 12, false, UiKit.Muted)); card.Add(UiKit.Text(cityEvent.Reward, 12, true, UiKit.Green));
+                if (!cityEvent.Claimed) card.Add(UiKit.Button("Join event", () => { if (game.ClaimEvent(cityEvent.Id)) { Render(); ShowCelebration("EVENT COMPLETE", cityEvent.Reward, "Your company is better known in the district."); } }, "waiting"));
+                content.Add(card);
+            }
+            content.Add(UiKit.Button("Back to Portfolio", () => { screen = "Portfolio"; Render(); }, "secondary"));
+        }
+
         private void ShowMenu()
         {
             if (menuOpen) return;
@@ -410,6 +440,7 @@ namespace DistrictEmpire.Presentation
                     if (entry == "Company" || entry == "Finances" || entry == "Employees" || entry == "Skills") { screen = "Company"; Render(); }
                     else if (entry == "Auctions") { screen = "Invest"; Render(); ShowToast("Auctions category selected."); }
                     else if (entry == "Shop") { screen = "Shop"; Render(); }
+                    else if (entry == "Events & News") { screen = "Events"; Render(); }
                     else ShowToast(entry + " is coming in the next local prototype pass.");
                 }, isLocked ? "locked" : "menu");
                 if (isLocked)
@@ -479,12 +510,12 @@ namespace DistrictEmpire.Presentation
         private int CompanyValue() => game.State.Properties.Where(p => p.IsOwned).Sum(p => p.Price) + game.State.Cash;
         private string LifecycleSignature() => string.Join("|", game.State.Properties.Where(property => property.IsOwned).Select(property => property.Id + ":" + property.Stage + ":" + property.Applicants.Count));
         private static string Money(int value) => value.ToString("N0") + " PLN";
-        private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary ? 1 : property.Condition < 90 ? 2 : 3;
-        private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : "Choose a use and advertise to start earning";
-        private static string PropertyActionLabel(Property property) => property.Condition < 90 ? "Repair pipe" : property.Stage == PropertyStage.Notary ? "Sign documents" : property.Stage == PropertyStage.ChoosingUse ? "Choose property use" : property.Stage == PropertyStage.Listing ? "Check listing progress" : property.Stage == PropertyStage.Applications ? "Choose tenant" : property.Stage == PropertyStage.Occupied ? "View tenant" : "Publish listing";
+        private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.CancellingContract ? 1 : property.Condition < 90 ? 2 : 3;
+        private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : property.Stage == PropertyStage.CancellingContract ? "Tenant is preparing to leave" : property.Stage == PropertyStage.ForSale ? "Sale offer is waiting" : "Choose a use and advertise to start earning";
+        private static string PropertyActionLabel(Property property) => property.Condition < 90 ? "Repair pipe" : property.Stage == PropertyStage.Notary ? "Sign documents" : property.Stage == PropertyStage.CancellingContract ? "Check move-out" : property.Stage == PropertyStage.ForSale ? "Review sale offer" : property.Stage == PropertyStage.ChoosingUse ? "Choose property use" : property.Stage == PropertyStage.Listing ? "Check listing progress" : property.Stage == PropertyStage.Applications ? "Choose tenant" : property.Stage == PropertyStage.Occupied ? "View tenant" : "Publish listing";
         private static StyleColor StatusColor(Property property) => property.Stage == PropertyStage.Occupied ? UiKit.Green : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? UiKit.Amber : UiKit.Blue;
-        private static string StatusTone(Property property) => property.Condition < 90 ? "problem" : property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse ? "decision" : "managed";
-        private string MapPinClass(Property property) => property.Condition < 90 && property.IsOwned ? "map-pin-problem" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "map-pin-waiting" : property.IsOwned ? "map-pin-owned" : property.Price > game.State.Cash ? "map-pin-locked" : property.Tier >= 3 ? "map-pin-dream" : "map-pin-available";
-        private string Status(Property property) => property.Stage == PropertyStage.Notary ? "Waiting for notary" : property.Stage == PropertyStage.ChoosingUse ? "Not earning · choose a use" : property.Stage == PropertyStage.Listing ? "Listing live · applications expected soon" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applications waiting" : property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName : property.IsOwned ? "Ready to advertise" : "Available to invest";
+        private static string StatusTone(Property property) => property.Condition < 90 ? "problem" : property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing || property.Stage == PropertyStage.CancellingContract || property.Stage == PropertyStage.ForSale ? "waiting" : property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse ? "decision" : "managed";
+        private string MapPinClass(Property property) => property.Condition < 90 && property.IsOwned ? "map-pin-problem" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing || property.Stage == PropertyStage.CancellingContract || property.Stage == PropertyStage.ForSale ? "map-pin-waiting" : property.IsOwned ? "map-pin-owned" : property.Price > game.State.Cash ? "map-pin-locked" : property.Tier >= 3 ? "map-pin-dream" : "map-pin-available";
+        private string Status(Property property) => property.Stage == PropertyStage.Notary ? "Waiting for notary" : property.Stage == PropertyStage.ChoosingUse ? "Not earning · choose a use" : property.Stage == PropertyStage.Listing ? "Listing live · applications expected soon" : property.Stage == PropertyStage.CancellingContract ? "Contract ending · tenant moving out" : property.Stage == PropertyStage.ForSale ? "On the market · offer waiting" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applications waiting" : property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName : property.IsOwned ? "Ready to advertise" : "Available to invest";
     }
 }

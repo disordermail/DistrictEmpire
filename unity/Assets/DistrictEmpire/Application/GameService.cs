@@ -34,6 +34,8 @@ namespace DistrictEmpire.Application
                     property.Stage = PropertyStage.Applications;
                     property.Applicants = CreateApplicants(property.Use);
                 }
+                if (property.Stage == PropertyStage.CancellingContract && now.Ticks >= property.ContractEndAtUtcTicks)
+                    ClearTenant(property);
             }
             repository.Save(State);
         }
@@ -149,14 +151,74 @@ namespace DistrictEmpire.Application
             repository.Save(State);
         }
 
-        public string Countdown(Property property) => clock.Countdown(property.Stage == PropertyStage.Notary ? property.NotaryCompleteAtUtcTicks : property.ListingAvailableAtUtcTicks, DateTime.UtcNow);
+        public bool StartContractCancellation(string propertyId)
+        {
+            var property = Find(propertyId);
+            if (property == null || property.Stage != PropertyStage.Occupied) return false;
+            property.Stage = PropertyStage.CancellingContract;
+            property.ContractEndAtUtcTicks = DateTime.UtcNow.AddSeconds(12).Ticks;
+            repository.Save(State);
+            return true;
+        }
+
+        public bool ListForSale(string propertyId)
+        {
+            var property = Find(propertyId);
+            if (property == null || !property.IsOwned || property.Stage == PropertyStage.Occupied || property.Stage == PropertyStage.CancellingContract || property.Stage == PropertyStage.Notary) return false;
+            property.Stage = PropertyStage.ForSale;
+            property.SalePrice = property.Price + property.Price / 8;
+            repository.Save(State);
+            return true;
+        }
+
+        public bool AcceptSaleOffer(string propertyId)
+        {
+            var property = Find(propertyId);
+            if (property == null || property.Stage != PropertyStage.ForSale) return false;
+            State.Cash += property.SalePrice;
+            State.Xp += 40;
+            property.IsOwned = false;
+            property.Stage = PropertyStage.Available;
+            property.Use = PropertyUse.None;
+            property.SalePrice = 0;
+            property.BuildingOwnedUnits = Math.Max(0, property.BuildingOwnedUnits - 1);
+            UpdateCompanyLevel();
+            repository.Save(State);
+            return true;
+        }
+
+        public bool ClaimEvent(string eventId)
+        {
+            var cityEvent = State.Events.FirstOrDefault(item => item.Id == eventId);
+            if (cityEvent == null || cityEvent.Claimed) return false;
+            cityEvent.Claimed = true;
+            State.Influence += 3;
+            State.Xp += 10;
+            UpdateCompanyLevel();
+            repository.Save(State);
+            return true;
+        }
+
+        public string Countdown(Property property) => clock.Countdown(property.Stage == PropertyStage.Notary ? property.NotaryCompleteAtUtcTicks : property.Stage == PropertyStage.CancellingContract ? property.ContractEndAtUtcTicks : property.ListingAvailableAtUtcTicks, DateTime.UtcNow);
         private Property Find(string id) => State.Properties.FirstOrDefault(p => p.Id == id);
+
+        private static void ClearTenant(Property property)
+        {
+            property.Stage = PropertyStage.Available;
+            property.TenantName = null;
+            property.TenantRole = null;
+            property.TenantStory = null;
+            property.Relationship = 0;
+            property.TenantDailyRent = 0;
+            property.ContractEndAtUtcTicks = 0;
+        }
 
         private static GameState CreateNewGame()
         {
             var state = new GameState { LastClockUtcTicks = DateTime.UtcNow.Ticks, RentReady = 620 };
             state.Properties.Add(new Property { Id = "old-town", Name = "Mokotow Starter", District = "Mokotow", Icon = "HOME", Price = 18000, BaseDailyRent = 620, Tier = 1, Category = "Apartments", MapX = 18, MapY = 58, Condition = 78, IsOwned = true, Stage = PropertyStage.Occupied, Use = PropertyUse.Residential, TenantName = "Maria Kowalska", TenantRole = "Teacher · single mother", TenantStory = "Maria teaches nearby and is building a new life in Mokotow.", Relationship = 62, TenantDailyRent = 620, BuildingName = "Mokotow Gardens", BuildingOwnedUnits = 3, BuildingTotalUnits = 10 });
             AddMarketProperties(state);
+            AddCityEvents(state);
             return state;
         }
 
@@ -195,6 +257,8 @@ namespace DistrictEmpire.Application
                 property.BuildingTotalUnits = property.Tier == 3 ? 18 : property.Tier == 2 ? 12 : 8;
                 property.BuildingOwnedUnits = property.IsOwned ? 1 : 0;
             }
+            if (State.Events == null) State.Events = new List<CityEvent>();
+            if (State.Events.Count == 0) AddCityEvents(State);
             UpdateCompanyLevel();
             repository.Save(State);
         }
@@ -212,8 +276,14 @@ namespace DistrictEmpire.Application
             state.Properties.Add(new Property { Id = "srodmiescie-house", Name = "Srodmiescie House", District = "Srodmiescie", Icon = "PRE", Price = 74000, BaseDailyRent = 2360, Tier = 3, Category = "Premium", MapX = 49, MapY = 61, Condition = 95, Stage = PropertyStage.Available });
         }
 
+        private static void AddCityEvents(GameState state)
+        {
+            state.Events.Add(new CityEvent { Id = "summer-festival", Title = "Summer Festival", Detail = "Tourism demand is rising. Promote your next business listing.", Reward = "+3 influence · +10 XP" });
+            state.Events.Add(new CityEvent { Id = "district-cleanup", Title = "District Cleanup", Detail = "Support Mokotow residents and strengthen your company reputation.", Reward = "+3 influence · +10 XP" });
+        }
+
         private static List<Applicant> CreateApplicants(PropertyUse use) => use == PropertyUse.Business
-            ? new List<Applicant> { new() { Id = "pharmacy", Name = "Green Cross Pharmacy", Role = "Healthcare", Story = "A reliable neighborhood pharmacy with a 24-month lease.", DailyRent = 1040, IsBusiness = true }, new() { Id = "grocery", Name = "Corner Grocery", Role = "Retail", Story = "A local food store seeking a practical long-term base.", DailyRent = 900, IsBusiness = true } }
+            ? new List<Applicant> { new() { Id = "pharmacy", Name = "Green Cross Pharmacy", Role = "Pharmacy", Story = "A reliable neighborhood pharmacy with a 24-month lease.", DailyRent = 1040, IsBusiness = true }, new() { Id = "grocery", Name = "Corner Grocery", Role = "Grocery shop", Story = "A local food store seeking a practical long-term base.", DailyRent = 900, IsBusiness = true }, new() { Id = "pierogi", Name = "Pierogi Bar", Role = "Restaurant", Story = "A family restaurant ready to open on Friday.", DailyRent = 1120, IsBusiness = true }, new() { Id = "beauty", Name = "Nova Beauty Studio", Role = "Beauty salon", Story = "A growing studio with loyal neighborhood customers.", DailyRent = 980, IsBusiness = true } }
             : new List<Applicant> { new() { Id = "adam", Name = "Adam Nowak", Role = "Software engineer", Story = "Can move in tomorrow and prefers a one-year lease.", DailyRent = 760 }, new() { Id = "marta", Name = "Marta Zielinska", Role = "Teacher", Story = "Moving closer to school with her daughter.", DailyRent = 710 } };
     }
 }

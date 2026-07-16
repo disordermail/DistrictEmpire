@@ -21,6 +21,18 @@ namespace DistrictEmpire.Editor
             Require(!service.ClaimDailyReward(), "Daily reward can be claimed twice.");
             Require(service.BuyInfluence(), "Influence purchase failed.");
             Require(service.Repair(starter.Id), "Maintenance action failed.");
+            Require(service.StartContractCancellation(starter.Id), "Contract cancellation failed.");
+            starter.ContractEndAtUtcTicks = DateTime.UtcNow.AddSeconds(-1).Ticks;
+            service.Tick();
+            Require(starter.Stage == PropertyStage.Available && string.IsNullOrEmpty(starter.TenantName), "Tenant did not leave after cancellation.");
+            Require(service.ListForSale(starter.Id), "Property sale listing failed.");
+            var salePrice = starter.SalePrice;
+            Require(service.AcceptSaleOffer(starter.Id), "Sale offer acceptance failed.");
+            Require(!starter.IsOwned && service.State.Cash >= salePrice, "Property sale did not complete.");
+
+            var cityEvent = service.State.Events[0];
+            Require(service.ClaimEvent(cityEvent.Id), "City event claim failed.");
+            Require(!service.ClaimEvent(cityEvent.Id), "City event can be claimed twice.");
 
             var studio = RequireProperty(service, "riverside");
             Require(service.Buy(studio.Id), "Purchase action failed.");
@@ -43,7 +55,7 @@ namespace DistrictEmpire.Editor
             Require(service.State.RentReady == 620, "Profile reset did not restore starter rent.");
             Require(!service.State.DailyRewardClaimed, "Profile reset did not restore daily reward.");
 
-            Debug.Log("District Empire core playtest passed: rent, shop, repair, buy, notary, use choice, listing, tenant selection and reset.");
+            Debug.Log("District Empire core playtest passed: rent, shop, repair, contract cancellation, sale, event, buy, notary, use choice, listing, tenant selection and reset.");
         }
 
         private static Property RequireProperty(GameService service, string id)
