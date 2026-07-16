@@ -12,6 +12,7 @@ namespace DistrictEmpire.EditorTools
         private const string ScenePath = "Assets/DistrictEmpire/Presentation/Scenes/DistrictEmpireVerticalSlice.unity";
         private const string PanelSettingsPath = "Assets/DistrictEmpire/Presentation/UI/DistrictEmpirePanelSettings.asset";
 
+        [MenuItem("District Empire/Setup Vertical Slice Scene")]
         public static void Create()
         {
             EnsureFolder("Assets/DistrictEmpire/Presentation/Scenes");
