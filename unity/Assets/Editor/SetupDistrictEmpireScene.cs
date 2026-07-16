@@ -34,6 +34,9 @@ namespace DistrictEmpire.EditorTools
                 panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
                 AssetDatabase.CreateAsset(panelSettings, PanelSettingsPath);
             }
+            panelSettings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
+            panelSettings.referenceResolution = new Vector2Int(1080, 1920);
+            EditorUtility.SetDirty(panelSettings);
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             var app = new GameObject("District Empire App");
