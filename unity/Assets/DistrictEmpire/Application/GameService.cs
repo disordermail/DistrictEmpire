@@ -16,6 +16,7 @@ namespace DistrictEmpire.Application
             this.repository = repository;
             this.clock = clock;
             State = repository.Load() ?? CreateNewGame();
+            EnsureMarketContent();
             Tick();
         }
 
@@ -104,9 +105,35 @@ namespace DistrictEmpire.Application
         private static GameState CreateNewGame()
         {
             var state = new GameState { LastClockUtcTicks = DateTime.UtcNow.Ticks, RentReady = 620 };
-            state.Properties.Add(new Property { Id = "old-town", Name = "Old Town Apartment", District = "Warsaw", Icon = "Home", Price = 18000, BaseDailyRent = 620, Condition = 78, IsOwned = true, Stage = PropertyStage.Occupied, Use = PropertyUse.Residential, TenantName = "Maria Kowalska", TenantDailyRent = 620 });
-            state.Properties.Add(new Property { Id = "riverside", Name = "Riverside Studio", District = "Praga", Icon = "Building", Price = 22000, BaseDailyRent = 760, Condition = 68, Stage = PropertyStage.Available });
+            state.Properties.Add(new Property { Id = "old-town", Name = "Mokotow Starter", District = "Mokotow", Icon = "HOME", Price = 18000, BaseDailyRent = 620, Tier = 1, Category = "Apartments", MapX = 18, MapY = 58, Condition = 78, IsOwned = true, Stage = PropertyStage.Occupied, Use = PropertyUse.Residential, TenantName = "Maria Kowalska", TenantDailyRent = 620 });
+            AddMarketProperties(state);
             return state;
+        }
+
+        private void EnsureMarketContent()
+        {
+            if (State.Properties.Any(p => p.Id == "wola-corner")) return;
+            var starter = State.Properties.FirstOrDefault(p => p.Id == "old-town");
+            if (starter != null)
+            {
+                starter.Name = "Mokotow Starter";
+                starter.District = "Mokotow";
+                starter.Icon = "HOME";
+                starter.Tier = 1;
+                starter.Category = "Apartments";
+                starter.MapX = 18;
+                starter.MapY = 58;
+            }
+            AddMarketProperties(State);
+            repository.Save(State);
+        }
+
+        private static void AddMarketProperties(GameState state)
+        {
+            state.Properties.Add(new Property { Id = "riverside", Name = "Riverside Studio", District = "Praga", Icon = "REN", Price = 22000, BaseDailyRent = 760, Tier = 1, Category = "Renovation", MapX = 68, MapY = 45, Condition = 68, Stage = PropertyStage.Available });
+            state.Properties.Add(new Property { Id = "wola-corner", Name = "Wola Corner", District = "Wola", Icon = "MIX", Price = 36000, BaseDailyRent = 1180, Tier = 2, Category = "Mixed use", MapX = 38, MapY = 36, Condition = 86, Stage = PropertyStage.Available });
+            state.Properties.Add(new Property { Id = "zoliborz-arcade", Name = "Zoliborz Arcade", District = "Zoliborz", Icon = "RET", Price = 45500, BaseDailyRent = 1460, Tier = 2, Category = "Retail", MapX = 28, MapY = 19, Condition = 91, Stage = PropertyStage.Available });
+            state.Properties.Add(new Property { Id = "srodmiescie-house", Name = "Srodmiescie House", District = "Srodmiescie", Icon = "PRE", Price = 74000, BaseDailyRent = 2360, Tier = 3, Category = "Premium", MapX = 49, MapY = 61, Condition = 95, Stage = PropertyStage.Available });
         }
 
         private static List<Applicant> CreateApplicants(PropertyUse use) => use == PropertyUse.Business

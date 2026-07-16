@@ -26,6 +26,10 @@ namespace DistrictEmpire.Domain
         public string Icon;
         public int Price;
         public int BaseDailyRent;
+        public int Tier;
+        public string Category;
+        public float MapX;
+        public float MapY;
         public int Condition;
         public bool IsOwned;
         public PropertyStage Stage;

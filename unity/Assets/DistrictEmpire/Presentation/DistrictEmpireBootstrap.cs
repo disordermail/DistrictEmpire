@@ -15,6 +15,7 @@ namespace DistrictEmpire.Presentation
         private VisualElement root;
         private VisualElement content;
         private string screen = "Portfolio";
+        private string selectedPropertyId = "old-town";
         private float nextClockRefresh;
 
         private void Awake()
@@ -25,7 +26,6 @@ namespace DistrictEmpire.Presentation
             if (style != null) root.styleSheets.Add(style);
             root.AddToClassList("app-shell");
             root.style.flexGrow = 1;
-            root.style.backgroundColor = new Color(0.94f, 0.96f, 0.98f);
             Render();
         }
 
@@ -34,21 +34,25 @@ namespace DistrictEmpire.Presentation
             if (Time.unscaledTime < nextClockRefresh) return;
             nextClockRefresh = Time.unscaledTime + 1f;
             game.Tick();
-            if (screen == "Portfolio") Render();
+            if (screen == "Portfolio" || screen == "Property") Render();
         }
 
         private void Render()
         {
             root.Clear();
             root.Add(BuildHeader());
-            content = new ScrollView { style = { flexGrow = 1 } };
+            content = new ScrollView { name = "ScreenContent" };
             content.AddToClassList("screen-scroll");
             root.Add(content);
-            if (screen == "Map") RenderMap();
-            else if (screen == "Invest") RenderInvest();
-            else if (screen == "Tasks") RenderTasks();
-            else if (screen == "Property") RenderProperty();
-            else RenderPortfolio();
+            switch (screen)
+            {
+                case "Map": RenderMap(); break;
+                case "Invest": RenderInvest(); break;
+                case "Tasks": RenderTasks(); break;
+                case "Property": RenderProperty(); break;
+                case "Company": RenderCompany(); break;
+                default: RenderPortfolio(); break;
+            }
             root.Add(BuildNav());
         }
 
@@ -56,18 +60,22 @@ namespace DistrictEmpire.Presentation
         {
             var header = new VisualElement();
             header.AddToClassList("top-header");
-            var row = new VisualElement(); row.AddToClassList("header-row");
+            var row = UiKit.Row("header-row");
             var title = new VisualElement();
-            title.Add(UiKit.Text("WARSAW · OFFLINE VERTICAL SLICE", 11, true, UiKit.Muted));
-            title.Add(UiKit.Text(screen == "Portfolio" ? "Morning briefing" : screen, 24, true));
+            title.Add(UiKit.Text("WARSZAWA · OFFLINE MVP", 11, true, UiKit.Muted));
+            title.Add(UiKit.Text("District Empire", 25, true));
             row.Add(title);
-            var controls = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
-            var level = new VisualElement(); level.AddToClassList("level-pill"); level.Add(UiKit.Text("LEVEL", 9, true, UiKit.Muted)); level.Add(UiKit.Text("1", 18, true, UiKit.Amber));
-            controls.Add(level); controls.Add(UiKit.Button("☰", ShowMenu, "secondary"));
-            row.Add(controls); header.Add(row);
+            var controls = UiKit.Row("header-controls");
+            var level = new VisualElement(); level.AddToClassList("level-pill");
+            level.Add(UiKit.Text("LVL", 9, true, UiKit.Muted));
+            level.Add(UiKit.Text("1", 18, true, UiKit.Amber));
+            controls.Add(level);
+            var menu = UiKit.Button("☰", ShowMenu, "icon"); menu.tooltip = "Company headquarters"; controls.Add(menu);
+            row.Add(controls);
+            header.Add(row);
             var wallet = new VisualElement(); wallet.AddToClassList("wallet-strip");
-            wallet.Add(WalletChip("Cash", $"{game.State.Cash:N0} PLN"));
-            wallet.Add(WalletChip("Rent/day", $"{game.State.Properties.Where(p => p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent):N0} PLN"));
+            wallet.Add(WalletChip("Cash", Money(game.State.Cash)));
+            wallet.Add(WalletChip("Rent/day", Money(OccupiedRent())));
             wallet.Add(WalletChip("Buildings", game.State.Properties.Count(p => p.IsOwned).ToString()));
             wallet.Add(WalletChip("Influence", game.State.Influence.ToString()));
             header.Add(wallet);
@@ -76,109 +84,295 @@ namespace DistrictEmpire.Presentation
 
         private VisualElement WalletChip(string label, string value)
         {
-            var chip = new VisualElement(); chip.AddToClassList("wallet-chip"); chip.Add(UiKit.Text(label, 10, false, UiKit.Muted)); chip.Add(UiKit.Text(value, 12, true, UiKit.Green)); return chip;
+            var chip = new VisualElement(); chip.AddToClassList("wallet-chip");
+            chip.Add(UiKit.Text(label, 10, false, UiKit.Muted)); chip.Add(UiKit.Text(value, 12, true, UiKit.Green));
+            return chip;
         }
 
         private VisualElement BuildNav()
         {
             var nav = new VisualElement(); nav.AddToClassList("bottom-nav");
-            foreach (var tab in new[] { "Portfolio", "Map", "Invest", "Tasks" })
-            {
-                var button = new Button(() => { screen = tab; Render(); }) { text = tab };
-                button.AddToClassList("nav-tab"); if (screen == tab) button.AddToClassList("nav-tab-active");
-                nav.Add(button);
-            }
+            AddNavButton(nav, "Portfolio", "PORTFOLIO", "▣");
+            AddNavButton(nav, "Map", "MAP", "⌖");
+            AddNavButton(nav, "Invest", "INVEST", "◆");
+            AddNavButton(nav, "Tasks", "TASKS", "✓");
             return nav;
+        }
+
+        private void AddNavButton(VisualElement nav, string destination, string label, string icon)
+        {
+            var button = new Button(() => { screen = destination; Render(); });
+            button.AddToClassList("nav-tab");
+            if (screen == destination) button.AddToClassList("nav-tab-active");
+            button.Add(UiKit.Text(icon, 16, true));
+            button.Add(UiKit.Text(label, 9, true));
+            if (destination == "Tasks" && TaskCount() > 0)
+            {
+                var badge = UiKit.Text(TaskCount().ToString(), 9, true); badge.AddToClassList("nav-badge"); button.Add(badge);
+            }
+            nav.Add(button);
         }
 
         private void RenderPortfolio()
         {
-            var state = game.State;
-            var income = UiKit.Card(state.RentReady > 0 ? "income" : "neutral");
-            income.Add(UiKit.Text(state.RentReady > 0 ? "RENT READY" : "NEXT RENT", 11, true, state.RentReady > 0 ? UiKit.Green : UiKit.Muted));
-            income.Add(UiKit.Text(state.RentReady > 0 ? $"{state.RentReady:N0} PLN" : "Tomorrow", 25, true));
-            income.Add(UiKit.Text(state.RentReady > 0 ? "From occupied properties" : "Payments arrive from occupied properties."));
-            income.Add(UiKit.Button(state.RentReady > 0 ? $"Collect {state.RentReady:N0} PLN" : "View rent schedule", () => { game.CollectRent(); Render(); }, state.RentReady > 0 ? "income" : "secondary"));
-            content.Add(income);
-            foreach (var property in state.Properties.Where(p => p.IsOwned)) content.Add(PropertyCard(property));
+            var owned = game.State.Properties.Where(p => p.IsOwned).ToList();
+            var desk = UiKit.Card("briefing"); desk.AddToClassList("briefing-card");
+            desk.Add(UiKit.Text("MORNING BRIEFING", 11, true, UiKit.Muted));
+            desk.Add(UiKit.Text("Good morning, Paweł.", 21, true));
+            var metrics = new VisualElement(); metrics.AddToClassList("briefing-metrics");
+            metrics.Add(Metric("Rent ready", Money(game.State.RentReady), game.State.RentReady > 0 ? "income" : "neutral"));
+            metrics.Add(Metric("Repairs", TaskCount().ToString(), TaskCount() > 0 ? "attention" : "neutral"));
+            metrics.Add(Metric("Applications", owned.Sum(p => p.Stage == PropertyStage.Applications ? p.Applicants.Count : 0).ToString(), "neutral"));
+            metrics.Add(Metric("City rank", "#12", "neutral"));
+            desk.Add(metrics); content.Add(desk);
+
+            var rent = UiKit.Card(game.State.RentReady > 0 ? "income" : "neutral"); rent.AddToClassList("rent-card");
+            var copy = new VisualElement(); copy.AddToClassList("rent-copy");
+            copy.Add(UiKit.Text(game.State.RentReady > 0 ? "RENT READY TO COLLECT" : "NEXT RENT", 10, true, game.State.RentReady > 0 ? UiKit.Green : UiKit.Muted));
+            copy.Add(UiKit.Text(game.State.RentReady > 0 ? Money(game.State.RentReady) : "Tomorrow", 24, true));
+            copy.Add(UiKit.Text($"{Money(ResidentialRent())} homes · {Money(BusinessRent())} businesses", 11, false, UiKit.Muted));
+            rent.Add(copy);
+            var collect = UiKit.Button(game.State.RentReady > 0 ? "Collect rent" : "Rent schedule", () =>
+            {
+                if (game.CollectRent()) ShowToast("Rent collected. Your cash balance is updated.");
+                else ShowToast("Maria's next payment is due tomorrow.");
+                Render();
+            }, game.State.RentReady > 0 ? "income" : "secondary");
+            collect.AddToClassList("rent-action"); rent.Add(collect); content.Add(rent);
+
+            content.Add(SectionHeading("TODAY IN YOUR PORTFOLIO", owned.Count == 0 ? "Build your first asset" : "Live property status"));
+            foreach (var property in owned.OrderBy(p => StatusRank(p))) content.Add(PropertyCard(property, true));
+            if (owned.Count == 0) content.Add(EmptyCard("No properties yet", "Open Map to find your first building."));
+        }
+
+        private VisualElement Metric(string label, string value, string tone)
+        {
+            var metric = new VisualElement(); metric.AddToClassList("briefing-metric"); metric.AddToClassList("metric-" + tone);
+            metric.Add(UiKit.Text(label, 10, false, UiKit.Muted)); metric.Add(UiKit.Text(value, 14, true)); return metric;
+        }
+
+        private VisualElement SectionHeading(string eyebrow, string title)
+        {
+            var heading = new VisualElement(); heading.AddToClassList("section-heading");
+            heading.Add(UiKit.Text(eyebrow, 10, true, UiKit.Muted)); heading.Add(UiKit.Text(title, 16, true)); return heading;
         }
 
         private void RenderMap()
         {
-            content.Add(UiKit.Text("What can I buy?", 20, true));
-            content.Add(UiKit.Text("Available opportunities across Warsaw. Buy early to begin the ownership transfer.", 13, false, UiKit.Muted));
-            foreach (var property in game.State.Properties.Where(p => !p.IsOwned))
+            content.Add(SectionHeading("WARSAW INVESTMENT MAP", "What can I buy?"));
+            content.Add(UiKit.Text("Tap a building to inspect its price, rent potential and current ownership.", 12, false, UiKit.Muted));
+            var map = new VisualElement(); map.AddToClassList("map-stage");
+            var activity = UiKit.Text("Nova Estates opened a pharmacy in Wola", 10, true); activity.AddToClassList("map-activity"); map.Add(activity);
+            foreach (var property in game.State.Properties)
             {
-                var card = UiKit.Card(); card.Add(UiKit.Text($"{property.Icon}  {property.Name}", 18, true)); card.Add(UiKit.Text($"{property.District} · {property.Price:N0} PLN · Est. {property.BaseDailyRent:N0} PLN/day"));
-                card.Add(UiKit.Button($"Buy for {property.Price:N0} PLN", () => { game.Buy(property.Id); screen = "Portfolio"; Render(); })); content.Add(card);
+                var pin = new Button(() => { selectedPropertyId = property.Id; OpenPropertyFromMap(property); });
+                pin.AddToClassList("map-pin");
+                pin.AddToClassList(property.IsOwned ? "map-pin-owned" : "map-pin-available");
+                pin.style.left = new Length(property.MapX, LengthUnit.Percent);
+                pin.style.top = new Length(property.MapY, LengthUnit.Percent);
+                pin.Add(UiKit.Text(property.Icon, 9, true));
+                var tier = UiKit.Text(property.Tier.ToString(), 9, true); tier.AddToClassList("pin-tier"); pin.Add(tier);
+                map.Add(pin);
+            }
+            content.Add(map);
+            var legend = UiKit.Card("neutral"); legend.AddToClassList("map-legend");
+            legend.Add(UiKit.Text("YOUR BUILDINGS", 10, true, UiKit.Green)); legend.Add(UiKit.Text("Available properties are blue. Your assets are green.", 12, false, UiKit.Muted)); content.Add(legend);
+        }
+
+        private void OpenPropertyFromMap(Property property)
+        {
+            selectedPropertyId = property.Id;
+            screen = "Property";
+            Render();
+        }
+
+        private void RenderInvest()
+        {
+            content.Add(SectionHeading("OPPORTUNITIES IN WARSAW", "Invest"));
+            var tabs = new VisualElement(); tabs.AddToClassList("market-tabs");
+            foreach (var category in new[] { "All", "Starter", "Retail", "Auctions" })
+            {
+                var tab = UiKit.Button(category, () => ShowToast(category == "Auctions" ? "No live auctions right now. Market listings refresh daily." : category + " listings selected."), "filter");
+                if (category == "All") tab.AddToClassList("filter-active"); tabs.Add(tab);
+            }
+            content.Add(tabs);
+            foreach (var property in game.State.Properties.Where(p => !p.IsOwned).OrderBy(p => p.Price))
+            {
+                var card = UiKit.Card(); card.AddToClassList("market-card");
+                var top = UiKit.Row("card-top");
+                var identity = new VisualElement();
+                identity.Add(UiKit.Text(property.Icon, 11, true, UiKit.Blue)); identity.Add(UiKit.Text(property.Name, 17, true)); identity.Add(UiKit.Text(property.District + " · " + property.Category, 11, false, UiKit.Muted));
+                top.Add(identity); top.Add(Badge("TIER " + property.Tier, "tier-badge")); card.Add(top);
+                card.Add(UiKit.Text("Estimated daily rent " + Money(property.BaseDailyRent) + " · Condition " + property.Condition + "%", 12, false, UiKit.Muted));
+                card.Add(UiKit.Button("Buy for " + Money(property.Price), () => BuyFromMarket(property), "primary")); content.Add(card);
             }
         }
 
-        private void RenderInvest() => RenderMap();
+        private void BuyFromMarket(Property property)
+        {
+            if (game.Buy(property.Id)) { selectedPropertyId = property.Id; screen = "Portfolio"; ShowToast("Purchase accepted. Notary transfer has started."); }
+            else ShowToast("You need more cash to buy " + property.Name + ".");
+            Render();
+        }
 
         private void RenderTasks()
         {
-            content.Add(UiKit.Text("Tasks", 20, true));
-            foreach (var property in game.State.Properties.Where(p => p.IsOwned && p.Condition < 90))
+            content.Add(SectionHeading("OPERATIONS", "Tasks"));
+            var tasks = game.State.Properties.Where(p => p.IsOwned && p.Condition < 90).ToList();
+            if (tasks.Count == 0) { content.Add(EmptyCard("All clear", "Your portfolio has no maintenance work today.")); return; }
+            foreach (var property in tasks)
             {
-                var card = UiKit.Card("attention"); card.Add(UiKit.Text($"Maintenance needed · {property.Name}", 17, true)); card.Add(UiKit.Text($"Condition {property.Condition}% · Repair cost 450 PLN"));
-                card.Add(UiKit.Button("Repair property for 450 PLN", () => { game.Repair(property.Id); Render(); })); content.Add(card);
+                var card = UiKit.Card("attention"); card.AddToClassList("task-card");
+                card.Add(UiKit.Text("MAINTENANCE REQUIRED", 10, true, UiKit.Amber)); card.Add(UiKit.Text("Repair " + property.Name, 17, true));
+                card.Add(UiKit.Text("Condition " + property.Condition + "% · Plumbing inspection and repair", 12, false, UiKit.Muted));
+                card.Add(UiKit.Button("Repair for 450 PLN", () => { if (game.Repair(property.Id)) ShowToast("Maintenance completed. Condition improved."); else ShowToast("You need 450 PLN for this repair."); Render(); }, "primary")); content.Add(card);
             }
         }
 
-        private VisualElement PropertyCard(Property property)
-        {
-            var tone = property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : "attention";
-            var card = UiKit.Card(tone); card.Add(UiKit.Text($"{property.Icon}  {property.Name}", 18, true));
-            var status = UiKit.Text(Status(property), 14, true); status.AddToClassList("property-status"); card.Add(status);
-            card.Add(UiKit.Text(property.Stage == PropertyStage.Occupied ? $"{property.TenantDailyRent:N0} PLN/day · {property.TenantName}" : "0 PLN income until a use is chosen"));
-            card.Add(UiKit.Button("View property", () => { selectedPropertyId = property.Id; screen = "Property"; Render(); }, "secondary"));
-            return card;
-        }
-
-        private string selectedPropertyId;
         private void RenderProperty()
         {
-            var property = game.State.Properties.First(p => p.Id == selectedPropertyId);
-            content.Add(UiKit.Text(property.Name, 22, true));
-            content.Add(UiKit.Text(Status(property), 15, true));
-            if (property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing) content.Add(UiKit.Text(game.Countdown(property), 14, true, UiKit.Amber));
-            if (property.Stage == PropertyStage.ChoosingUse)
+            var property = game.State.Properties.FirstOrDefault(p => p.Id == selectedPropertyId);
+            if (property == null) { screen = "Portfolio"; Render(); return; }
+            var hero = UiKit.Card(property.IsOwned ? "income" : "neutral"); hero.AddToClassList("property-hero");
+            hero.Add(UiKit.Text(property.District.ToUpperInvariant() + " · " + property.Category.ToUpperInvariant(), 10, true, UiKit.Muted));
+            hero.Add(UiKit.Text(property.Icon, 13, true, UiKit.Blue)); hero.Add(UiKit.Text(property.Name, 23, true));
+            hero.Add(UiKit.Text(Status(property), 13, true, StatusColor(property)));
+            hero.Add(PropertyFacts(property)); content.Add(hero);
+
+            if (!property.IsOwned)
             {
-                var choice = UiKit.Card("attention"); choice.Add(UiKit.Text("How should this property earn money?", 17, true)); choice.Add(UiKit.Text("Choose a home rental or a business tenant. This choice controls the applicant pool."));
-                choice.Add(UiKit.Button("Rent as a home", () => { game.ChooseUse(property.Id, PropertyUse.Residential); Render(); }));
+                content.Add(UiKit.Button("Buy for " + Money(property.Price), () => BuyFromMarket(property), "primary"));
+            }
+            else if (property.Stage == PropertyStage.Notary)
+            {
+                content.Add(FlowCard("WAITING FOR NOTARY", game.Countdown(property), "Ownership transfer is underway. Review the market while the papers are processed."));
+            }
+            else if (property.Stage == PropertyStage.ChoosingUse)
+            {
+                var choice = FlowCard("OWNERSHIP TRANSFER COMPLETE", "How should this property earn money?", "Choose a home rental or a business tenant.");
+                choice.Add(UiKit.Button("Rent as a home", () => { game.ChooseUse(property.Id, PropertyUse.Residential); Render(); }, "primary"));
                 choice.Add(UiKit.Button("Use as a business", () => { game.ChooseUse(property.Id, PropertyUse.Business); Render(); }, "secondary")); content.Add(choice);
             }
-            else if (property.Stage == PropertyStage.Available) content.Add(UiKit.Button("Create rental listing", () => { game.PublishListing(property.Id); Render(); }));
+            else if (property.Stage == PropertyStage.Available)
+            {
+                var advertise = FlowCard("READY TO ADVERTISE", "Find the right tenant", "Your listing will accumulate views and applications shortly.");
+                advertise.Add(UiKit.Button("Publish rental listing", () => { game.PublishListing(property.Id); Render(); }, "primary")); content.Add(advertise);
+            }
+            else if (property.Stage == PropertyStage.Listing)
+            {
+                content.Add(FlowCard("ADVERTISEMENT LIVE", game.Countdown(property), "Views and visits are growing. Applications will arrive soon."));
+            }
             else if (property.Stage == PropertyStage.Applications)
             {
-                content.Add(UiKit.Text("Applicants", 18, true));
+                content.Add(SectionHeading("APPLICATIONS WAITING", "Choose a tenant"));
                 foreach (var applicant in property.Applicants)
                 {
-                    var card = UiKit.Card(); card.Add(UiKit.Text(applicant.Name, 16, true)); card.Add(UiKit.Text($"{applicant.Role} · {applicant.DailyRent:N0} PLN/day")); card.Add(UiKit.Text(applicant.Story)); card.Add(UiKit.Button($"Choose {applicant.Name}", () => { game.SelectApplicant(property.Id, applicant.Id); Render(); })); content.Add(card);
+                    var applicantCard = UiKit.Card(); applicantCard.AddToClassList("applicant-card"); applicantCard.Add(UiKit.Text("APPLICANT", 10, true, UiKit.Muted));
+                    applicantCard.Add(UiKit.Text(applicant.Name, 17, true)); applicantCard.Add(UiKit.Text(applicant.Role + " · " + Money(applicant.DailyRent) + " / day", 12, true, UiKit.Green)); applicantCard.Add(UiKit.Text(applicant.Story, 12, false, UiKit.Muted));
+                    applicantCard.Add(UiKit.Button("Accept applicant", () => { game.SelectApplicant(property.Id, applicant.Id); ShowToast("Lease signed with " + applicant.Name + "."); Render(); }, "primary")); content.Add(applicantCard);
                 }
             }
-            else content.Add(PropertyCard(property));
-            content.Add(UiKit.Button("Back to Portfolio", () => { screen = "Portfolio"; Render(); }, "secondary"));
+            else
+            {
+                var occupied = FlowCard("OCCUPIED", "Tenant: " + property.TenantName, "Rent " + Money(property.TenantDailyRent) + " / day · Next payment tomorrow");
+                if (property.Condition < 90) occupied.Add(UiKit.Button("Maintain property", () => { game.Repair(property.Id); Render(); }, "secondary")); content.Add(occupied);
+            }
+            content.Add(UiKit.Button("Back to portfolio", () => { screen = "Portfolio"; Render(); }, "secondary"));
         }
 
-        private string Status(Property property) => property.Stage switch
+        private VisualElement PropertyFacts(Property property)
         {
-            PropertyStage.Notary => "Waiting for notary",
-            PropertyStage.ChoosingUse => "Not earning · choose a use",
-            PropertyStage.Listing => "Listing live · applications expected soon",
-            PropertyStage.Applications => $"{property.Applicants.Count} applications waiting",
-            PropertyStage.Occupied => $"Occupied by {property.TenantName}",
-            _ => "Ready to advertise"
-        };
+            var facts = new VisualElement(); facts.AddToClassList("property-facts");
+            facts.Add(Fact("TIER", property.Tier.ToString())); facts.Add(Fact("VALUE", Money(property.Price))); facts.Add(Fact("RENT/DAY", Money(property.IsOwned && property.TenantDailyRent > 0 ? property.TenantDailyRent : property.BaseDailyRent))); facts.Add(Fact("CONDITION", property.Condition + "%")); return facts;
+        }
+
+        private VisualElement Fact(string label, string value)
+        {
+            var fact = new VisualElement(); fact.AddToClassList("fact"); fact.Add(UiKit.Text(label, 9, true, UiKit.Muted)); fact.Add(UiKit.Text(value, 12, true)); return fact;
+        }
+
+        private VisualElement FlowCard(string eyebrow, string title, string text)
+        {
+            var card = UiKit.Card("waiting"); card.AddToClassList("flow-card"); card.Add(UiKit.Text(eyebrow, 10, true, UiKit.Amber)); card.Add(UiKit.Text(title, 18, true)); card.Add(UiKit.Text(text, 12, false, UiKit.Muted)); return card;
+        }
+
+        private void RenderCompany()
+        {
+            content.Add(SectionHeading("YOUR COMPANY", "District Empire"));
+            var card = UiKit.Card("briefing"); card.Add(UiKit.Text("PAWEŁ W. · CEO", 11, true, UiKit.Muted)); card.Add(UiKit.Text("Company value " + Money(CompanyValue()), 22, true)); card.Add(UiKit.Text("Level 1 · Warsaw portfolio", 12, false, UiKit.Muted)); content.Add(card);
+            foreach (var item in new[] { "Finances", "Employees", "Skills", "Rankings" })
+            {
+                var row = UiKit.Card(); row.Add(UiKit.Text(item, 16, true)); row.Add(UiKit.Text(item == "Finances" ? "Income and expenses unlock as your company grows." : "Available as your company reaches higher levels.", 12, false, UiKit.Muted)); content.Add(row);
+            }
+        }
 
         private void ShowMenu()
         {
-            var menu = UiKit.Card(); menu.AddToClassList("menu-panel");
-            menu.Add(UiKit.Text("Paweł W. · Company", 17, true));
-            foreach (var item in new[] { "Company", "Finances", "Employees", "Skills", "Auctions", "Rankings", "Events & News", "Shop", "Friends", "Settings & Help" })
-                menu.Add(UiKit.Button(item, () => { root.Remove(menu); if (item == "Auctions") { screen = "Invest"; Render(); } }, "secondary"));
-            root.Add(menu);
+            var overlay = new VisualElement(); overlay.AddToClassList("menu-overlay");
+            overlay.RegisterCallback<ClickEvent>(evt => { if (evt.target == overlay) root.Remove(overlay); });
+            var menu = new VisualElement(); menu.AddToClassList("company-menu");
+            var profile = UiKit.Row("menu-profile"); profile.Add(UiKit.Text("PW", 16, true, UiKit.Blue));
+            var profileText = new VisualElement(); profileText.Add(UiKit.Text("Paweł W.", 17, true)); profileText.Add(UiKit.Text("CEO · District Empire", 11, false, UiKit.Muted)); profile.Add(profileText); menu.Add(profile);
+            menu.Add(UiKit.Text("Company value " + Money(CompanyValue()), 16, true));
+            AddMenuSection(menu, "YOUR COMPANY", new[] { "Company", "Finances", "Employees", "Skills" }, overlay);
+            AddMenuSection(menu, "OPPORTUNITIES", new[] { "Auctions", "Rankings", "Events & News" }, overlay);
+            AddMenuSection(menu, "ACCOUNT", new[] { "Shop", "Friends", "Settings & Help" }, overlay);
+            overlay.Add(menu); root.Add(overlay);
         }
+
+        private void AddMenuSection(VisualElement menu, string title, string[] entries, VisualElement overlay)
+        {
+            var heading = UiKit.Text(title, 10, true, UiKit.Muted); heading.AddToClassList("menu-heading"); menu.Add(heading);
+            foreach (var entry in entries)
+            {
+                var item = UiKit.Button(entry, () =>
+                {
+                    root.Remove(overlay);
+                    if (entry == "Company" || entry == "Finances" || entry == "Employees" || entry == "Skills") { screen = "Company"; Render(); }
+                    else if (entry == "Auctions") { screen = "Invest"; Render(); ShowToast("Auctions category selected."); }
+                    else ShowToast(entry + " is coming in the next local prototype pass.");
+                }, "menu"); menu.Add(item);
+            }
+        }
+
+        private void ShowToast(string message)
+        {
+            var toast = UiKit.Text(message, 12, true); toast.AddToClassList("toast"); root.Add(toast);
+            toast.schedule.Execute(() => { if (toast.parent != null) toast.parent.Remove(toast); }).StartingIn(2600);
+        }
+
+        private VisualElement PropertyCard(Property property, bool showAction)
+        {
+            var tone = property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : "attention";
+            var card = UiKit.Card(tone); card.AddToClassList("property-card");
+            var top = UiKit.Row("card-top");
+            var identity = new VisualElement(); identity.Add(UiKit.Text(property.Icon, 10, true, UiKit.Blue)); identity.Add(UiKit.Text(property.Name, 17, true)); identity.Add(UiKit.Text(property.District + " · " + property.Category, 11, false, UiKit.Muted)); top.Add(identity); top.Add(Badge("TIER " + property.Tier, "tier-badge")); card.Add(top);
+            card.Add(UiKit.Text(Status(property), 13, true, StatusColor(property)));
+            card.Add(UiKit.Text(PropertyDescription(property), 12, false, UiKit.Muted));
+            var bottom = UiKit.Row("property-bottom"); bottom.Add(UiKit.Text("Monthly " + Money((property.TenantDailyRent > 0 ? property.TenantDailyRent : property.BaseDailyRent) * 30), 11, true)); bottom.Add(UiKit.Text("Condition " + property.Condition + "%", 11, true)); card.Add(bottom);
+            if (showAction) card.Add(UiKit.Button("Open property", () => { selectedPropertyId = property.Id; screen = "Property"; Render(); }, "secondary"));
+            return card;
+        }
+
+        private VisualElement Badge(string value, string className)
+        {
+            var badge = UiKit.Text(value, 9, true); badge.AddToClassList(className); return badge;
+        }
+
+        private VisualElement EmptyCard(string title, string description)
+        {
+            var card = UiKit.Card("neutral"); card.AddToClassList("empty-card"); card.Add(UiKit.Text(title, 18, true)); card.Add(UiKit.Text(description, 12, false, UiKit.Muted)); return card;
+        }
+
+        private int OccupiedRent() => game.State.Properties.Where(p => p.IsOwned && p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent);
+        private int ResidentialRent() => game.State.Properties.Where(p => p.IsOwned && p.Use == PropertyUse.Residential && p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent);
+        private int BusinessRent() => game.State.Properties.Where(p => p.IsOwned && p.Use == PropertyUse.Business && p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent);
+        private int TaskCount() => game.State.Properties.Count(p => p.IsOwned && p.Condition < 90);
+        private int CompanyValue() => game.State.Properties.Where(p => p.IsOwned).Sum(p => p.Price) + game.State.Cash;
+        private static string Money(int value) => value.ToString("N0") + " PLN";
+        private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary ? 1 : property.Condition < 90 ? 2 : 3;
+        private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : "Choose a use and advertise to start earning";
+        private static StyleColor StatusColor(Property property) => property.Stage == PropertyStage.Occupied ? UiKit.Green : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? UiKit.Amber : UiKit.Blue;
+        private string Status(Property property) => property.Stage == PropertyStage.Notary ? "Waiting for notary" : property.Stage == PropertyStage.ChoosingUse ? "Not earning · choose a use" : property.Stage == PropertyStage.Listing ? "Listing live · applications expected soon" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applications waiting" : property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName : property.IsOwned ? "Ready to advertise" : "Available to invest";
     }
 }

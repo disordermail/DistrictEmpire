@@ -54,5 +54,14 @@ namespace DistrictEmpire.Presentation
             button.style.color = kind == "secondary" ? Blue : new StyleColor(UnityEngine.Color.white);
             return button;
         }
+
+        public static VisualElement Row(string className = null)
+        {
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.alignItems = Align.Center;
+            if (!string.IsNullOrEmpty(className)) row.AddToClassList(className);
+            return row;
+        }
     }
 }
