@@ -1,4 +1,5 @@
 using DistrictEmpire.Presentation;
+using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -11,6 +12,15 @@ namespace DistrictEmpire.EditorTools
     {
         private const string ScenePath = "Assets/DistrictEmpire/Presentation/Scenes/DistrictEmpireVerticalSlice.unity";
         private const string PanelSettingsPath = "Assets/DistrictEmpire/Presentation/UI/DistrictEmpirePanelSettings.asset";
+
+        [InitializeOnLoadMethod]
+        private static void EnsureSceneAfterCompile()
+        {
+            EditorApplication.delayCall += () =>
+            {
+                if (!File.Exists(ScenePath)) Create();
+            };
+        }
 
         [MenuItem("District Empire/Setup Vertical Slice Scene")]
         public static void Create()
