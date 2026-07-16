@@ -155,7 +155,7 @@ namespace DistrictEmpire.Presentation
 
         private void ShowMenu()
         {
-            var menu = UiKit.Card(); menu.style.position = Position.Absolute; menu.style.top = 60; menu.style.right = 12; menu.style.width = 280; menu.style.zIndex = 10;
+            var menu = UiKit.Card(); menu.style.position = Position.Absolute; menu.style.top = 60; menu.style.right = 12; menu.style.width = 280;
             menu.Add(UiKit.Text("Paweł W. · Company", 17, true));
             foreach (var item in new[] { "Company", "Finances", "Employees", "Skills", "Auctions", "Rankings", "Events & News", "Shop", "Friends", "Settings & Help" })
                 menu.Add(UiKit.Button(item, () => { root.Remove(menu); if (item == "Auctions") { screen = "Invest"; Render(); } }, "secondary"));
