@@ -12,6 +12,9 @@
   "allowUnsafeCode": false,
   "overrideReferences": false,
   "precompiledReferences": [],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
   "autoReferenced": false,
   "defineConstraints": [],
   "versionDefines": [],
