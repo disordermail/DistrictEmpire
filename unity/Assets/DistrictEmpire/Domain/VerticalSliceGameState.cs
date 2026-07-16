@@ -35,7 +35,13 @@ namespace DistrictEmpire.Domain
         public PropertyStage Stage;
         public PropertyUse Use;
         public string TenantName;
+        public string TenantRole;
+        public string TenantStory;
+        public int Relationship;
         public int TenantDailyRent;
+        public string BuildingName;
+        public int BuildingOwnedUnits;
+        public int BuildingTotalUnits;
         public long NotaryCompleteAtUtcTicks;
         public long ListingAvailableAtUtcTicks;
         public List<Applicant> Applicants = new();
@@ -46,6 +52,8 @@ namespace DistrictEmpire.Domain
     {
         public int Cash = 32000;
         public int Influence = 35;
+        public int Xp;
+        public int CompanyLevel = 1;
         public int Day = 1;
         public int RentReady;
         public long LastClockUtcTicks;

@@ -17,6 +17,7 @@ namespace DistrictEmpire.Application
             this.clock = clock;
             State = repository.Load() ?? CreateNewGame();
             EnsureMarketContent();
+            EnsureLivingWorldContent();
             Tick();
         }
 
@@ -42,6 +43,9 @@ namespace DistrictEmpire.Application
             if (State.RentReady <= 0) return false;
             State.Cash += State.RentReady;
             State.RentReady = 0;
+            State.Xp += 25;
+            State.Influence += 1;
+            UpdateCompanyLevel();
             repository.Save(State);
             return true;
         }
@@ -53,6 +57,8 @@ namespace DistrictEmpire.Application
             if (property == null || State.Cash < cost || property.Condition >= 100) return false;
             State.Cash -= cost;
             property.Condition = Math.Min(100, property.Condition + 22);
+            State.Xp += 15;
+            UpdateCompanyLevel();
             repository.Save(State);
             return true;
         }
@@ -93,9 +99,14 @@ namespace DistrictEmpire.Application
             var applicant = property?.Applicants.FirstOrDefault(a => a.Id == applicantId);
             if (property == null || applicant == null || property.Stage != PropertyStage.Applications) return;
             property.TenantName = applicant.Name;
+            property.TenantRole = applicant.Role;
+            property.TenantStory = applicant.Story;
+            property.Relationship = 54;
             property.TenantDailyRent = applicant.DailyRent;
             property.Stage = PropertyStage.Occupied;
             property.Applicants.Clear();
+            State.Xp += 30;
+            UpdateCompanyLevel();
             repository.Save(State);
         }
 
@@ -105,14 +116,13 @@ namespace DistrictEmpire.Application
         private static GameState CreateNewGame()
         {
             var state = new GameState { LastClockUtcTicks = DateTime.UtcNow.Ticks, RentReady = 620 };
-            state.Properties.Add(new Property { Id = "old-town", Name = "Mokotow Starter", District = "Mokotow", Icon = "HOME", Price = 18000, BaseDailyRent = 620, Tier = 1, Category = "Apartments", MapX = 18, MapY = 58, Condition = 78, IsOwned = true, Stage = PropertyStage.Occupied, Use = PropertyUse.Residential, TenantName = "Maria Kowalska", TenantDailyRent = 620 });
+            state.Properties.Add(new Property { Id = "old-town", Name = "Mokotow Starter", District = "Mokotow", Icon = "HOME", Price = 18000, BaseDailyRent = 620, Tier = 1, Category = "Apartments", MapX = 18, MapY = 58, Condition = 78, IsOwned = true, Stage = PropertyStage.Occupied, Use = PropertyUse.Residential, TenantName = "Maria Kowalska", TenantRole = "Teacher · single mother", TenantStory = "Maria teaches nearby and is building a new life in Mokotow.", Relationship = 62, TenantDailyRent = 620, BuildingName = "Mokotow Gardens", BuildingOwnedUnits = 3, BuildingTotalUnits = 10 });
             AddMarketProperties(state);
             return state;
         }
 
         private void EnsureMarketContent()
         {
-            if (State.Properties.Any(p => p.Id == "wola-corner")) return;
             var starter = State.Properties.FirstOrDefault(p => p.Id == "old-town");
             if (starter != null)
             {
@@ -124,8 +134,35 @@ namespace DistrictEmpire.Application
                 starter.MapX = 18;
                 starter.MapY = 58;
             }
-            AddMarketProperties(State);
+            if (!State.Properties.Any(p => p.Id == "wola-corner")) AddMarketProperties(State);
             repository.Save(State);
+        }
+
+        private void EnsureLivingWorldContent()
+        {
+            var starter = Find("old-town");
+            if (starter != null)
+            {
+                if (string.IsNullOrEmpty(starter.TenantRole)) starter.TenantRole = "Teacher · single mother";
+                if (string.IsNullOrEmpty(starter.TenantStory)) starter.TenantStory = "Maria teaches nearby and is building a new life in Mokotow.";
+                if (starter.Relationship <= 0) starter.Relationship = 62;
+                if (string.IsNullOrEmpty(starter.BuildingName)) starter.BuildingName = "Mokotow Gardens";
+                if (starter.BuildingTotalUnits <= 0) starter.BuildingTotalUnits = 10;
+                if (starter.BuildingOwnedUnits <= 0) starter.BuildingOwnedUnits = 3;
+            }
+            foreach (var property in State.Properties.Where(p => p.BuildingTotalUnits <= 0))
+            {
+                property.BuildingName = property.Name + " Residences";
+                property.BuildingTotalUnits = property.Tier == 3 ? 18 : property.Tier == 2 ? 12 : 8;
+                property.BuildingOwnedUnits = property.IsOwned ? 1 : 0;
+            }
+            UpdateCompanyLevel();
+            repository.Save(State);
+        }
+
+        private void UpdateCompanyLevel()
+        {
+            State.CompanyLevel = Math.Max(1, 1 + State.Xp / 100);
         }
 
         private static void AddMarketProperties(GameState state)
