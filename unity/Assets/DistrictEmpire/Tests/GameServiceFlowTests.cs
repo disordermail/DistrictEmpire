@@ -100,6 +100,39 @@ namespace DistrictEmpire.Tests
             Assert.AreEqual("Green Cross Pharmacy", studio.Applicants[0].Name);
         }
 
+        [Test]
+        public void RenovationUpgradeNegotiationAndGoals_CreateMeaningfulChoices()
+        {
+            var service = NewService();
+            var starter = service.State.Properties.Find(property => property.Id == "old-town");
+            var cash = service.State.Cash;
+            Assert.IsTrue(service.Renovate(starter.Id));
+            Assert.IsTrue(starter.Renovated);
+            Assert.Greater(starter.TenantDailyRent, 620);
+            Assert.IsTrue(service.UpgradeProperty(starter.Id));
+            Assert.AreEqual(2, starter.Level);
+            Assert.IsTrue(service.PromoteProperty(starter.Id));
+            Assert.AreEqual(1, starter.Popularity);
+            var goal = service.State.Goals.Find(candidate => candidate.Id == "first-upgrade");
+            Assert.AreEqual(1, goal.Progress);
+            Assert.IsTrue(service.ClaimGoal(goal.Id));
+            Assert.Greater(service.State.Cash, cash - 2500);
+
+            var studio = service.State.Properties.Find(property => property.Id == "riverside");
+            Assert.IsTrue(service.Buy(studio.Id));
+            studio.NotaryCompleteAtUtcTicks = DateTime.UtcNow.AddSeconds(-1).Ticks;
+            service.Tick();
+            service.ChooseUse(studio.Id, PropertyUse.Residential);
+            service.PublishListing(studio.Id);
+            studio.ListingAvailableAtUtcTicks = DateTime.UtcNow.AddSeconds(-1).Ticks;
+            service.Tick();
+            var applicant = studio.Applicants[0];
+            var proposedRent = applicant.DailyRent;
+            Assert.IsTrue(service.NegotiateApplicant(studio.Id, applicant.Id));
+            Assert.Greater(applicant.DailyRent, proposedRent);
+            Assert.IsFalse(service.NegotiateApplicant(studio.Id, applicant.Id));
+        }
+
         private static GameService NewService()
         {
             return new GameService(new MemoryRepository(), new GameClock());

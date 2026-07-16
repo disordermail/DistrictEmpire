@@ -17,6 +17,25 @@ namespace DistrictEmpire.Domain
     }
 
     [Serializable]
+    public sealed class NpcActivity
+    {
+        public string Investor;
+        public string Title;
+        public string Detail;
+    }
+
+    [Serializable]
+    public sealed class CompanyGoal
+    {
+        public string Id;
+        public string Title;
+        public string Detail;
+        public int Target;
+        public int Progress;
+        public bool Claimed;
+    }
+
+    [Serializable]
     public sealed class Applicant
     {
         public string Id;
@@ -25,6 +44,7 @@ namespace DistrictEmpire.Domain
         public string Story;
         public int DailyRent;
         public bool IsBusiness;
+        public bool Negotiated;
     }
 
     [Serializable]
@@ -41,6 +61,9 @@ namespace DistrictEmpire.Domain
         public float MapX;
         public float MapY;
         public int Condition;
+        public int Level = 1;
+        public int Popularity;
+        public bool Renovated;
         public bool IsOwned;
         public PropertyStage Stage;
         public PropertyUse Use;
@@ -73,5 +96,7 @@ namespace DistrictEmpire.Domain
         public long LastClockUtcTicks;
         public List<Property> Properties = new();
         public List<CityEvent> Events = new();
+        public List<NpcActivity> NpcActivities = new();
+        public List<CompanyGoal> Goals = new();
     }
 }

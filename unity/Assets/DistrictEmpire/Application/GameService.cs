@@ -33,6 +33,8 @@ namespace DistrictEmpire.Application
                 RefreshDailyEvents();
                 foreach (var property in State.Properties.Where(property => property.IsOwned && property.Stage == PropertyStage.Occupied))
                     property.Condition = Math.Max(55, property.Condition - elapsedDays * 2);
+                RefreshNpcActivities();
+                UpdateGoals();
             }
             foreach (var property in State.Properties.Where(p => p.IsOwned))
             {
@@ -74,6 +76,51 @@ namespace DistrictEmpire.Application
             return true;
         }
 
+        public bool Renovate(string propertyId)
+        {
+            var property = Find(propertyId);
+            var cost = 900 + property?.Tier * 300 ?? 0;
+            if (property == null || !property.IsOwned || property.Renovated || State.Cash < cost) return false;
+            State.Cash -= cost;
+            property.Renovated = true;
+            property.Condition = 100;
+            property.BaseDailyRent += 90 * property.Tier;
+            property.TenantDailyRent += property.Stage == PropertyStage.Occupied ? 90 * property.Tier : 0;
+            State.Xp += 25;
+            UpdateCompanyLevel();
+            repository.Save(State);
+            return true;
+        }
+
+        public bool UpgradeProperty(string propertyId)
+        {
+            var property = Find(propertyId);
+            var cost = property == null ? 0 : 1100 * property.Level * property.Tier;
+            if (property == null || !property.IsOwned || State.Cash < cost || property.Level >= 3) return false;
+            State.Cash -= cost;
+            property.Level++;
+            property.BaseDailyRent += 70 * property.Tier;
+            if (property.Stage == PropertyStage.Occupied) property.TenantDailyRent += 70 * property.Tier;
+            State.Xp += 20;
+            UpdateCompanyLevel();
+            UpdateGoals();
+            repository.Save(State);
+            return true;
+        }
+
+        public bool PromoteProperty(string propertyId)
+        {
+            const int cost = 3;
+            var property = Find(propertyId);
+            if (property == null || !property.IsOwned || State.Influence < cost || property.Popularity >= 3) return false;
+            State.Influence -= cost;
+            property.Popularity++;
+            property.BaseDailyRent += 35;
+            if (property.Stage == PropertyStage.Occupied) property.TenantDailyRent += 35;
+            repository.Save(State);
+            return true;
+        }
+
         public bool Buy(string propertyId)
         {
             var property = Find(propertyId);
@@ -83,6 +130,7 @@ namespace DistrictEmpire.Application
             property.BuildingOwnedUnits = Math.Max(1, property.BuildingOwnedUnits);
             property.Stage = PropertyStage.Notary;
             property.NotaryCompleteAtUtcTicks = DateTime.UtcNow.AddSeconds(12).Ticks;
+            UpdateGoals();
             repository.Save(State);
             return true;
         }
@@ -161,6 +209,17 @@ namespace DistrictEmpire.Application
             repository.Save(State);
         }
 
+        public bool NegotiateApplicant(string propertyId, string applicantId)
+        {
+            var property = Find(propertyId);
+            var applicant = property?.Applicants.FirstOrDefault(candidate => candidate.Id == applicantId);
+            if (property == null || applicant == null || applicant.Negotiated || property.Stage != PropertyStage.Applications) return false;
+            applicant.Negotiated = true;
+            applicant.DailyRent += applicant.IsBusiness ? 120 : 60;
+            repository.Save(State);
+            return true;
+        }
+
         public bool StartContractCancellation(string propertyId)
         {
             var property = Find(propertyId);
@@ -193,6 +252,7 @@ namespace DistrictEmpire.Application
             property.SalePrice = 0;
             property.BuildingOwnedUnits = Math.Max(0, property.BuildingOwnedUnits - 1);
             UpdateCompanyLevel();
+            UpdateGoals();
             repository.Save(State);
             return true;
         }
@@ -204,6 +264,19 @@ namespace DistrictEmpire.Application
             cityEvent.Claimed = true;
             State.Influence += 3;
             State.Xp += 10;
+            UpdateCompanyLevel();
+            repository.Save(State);
+            return true;
+        }
+
+        public bool ClaimGoal(string goalId)
+        {
+            var goal = State.Goals.FirstOrDefault(candidate => candidate.Id == goalId);
+            if (goal == null || goal.Claimed || goal.Progress < goal.Target) return false;
+            goal.Claimed = true;
+            State.Cash += 500;
+            State.Influence += 2;
+            State.Xp += 20;
             UpdateCompanyLevel();
             repository.Save(State);
             return true;
@@ -268,7 +341,11 @@ namespace DistrictEmpire.Application
                 property.BuildingOwnedUnits = property.IsOwned ? 1 : 0;
             }
             if (State.Events == null) State.Events = new List<CityEvent>();
+            if (State.NpcActivities == null) State.NpcActivities = new List<NpcActivity>();
+            if (State.Goals == null) State.Goals = new List<CompanyGoal>();
             if (State.EventsDay != State.Day || State.Events.Count == 0) RefreshDailyEvents();
+            if (State.NpcActivities.Count == 0) RefreshNpcActivities();
+            EnsureGoals();
             UpdateCompanyLevel();
             repository.Save(State);
         }
@@ -276,6 +353,33 @@ namespace DistrictEmpire.Application
         private void UpdateCompanyLevel()
         {
             State.CompanyLevel = Math.Max(1, 1 + State.Xp / 100);
+        }
+
+        private void EnsureGoals()
+        {
+            if (State.Goals.Count > 0) return;
+            State.Goals.Add(new CompanyGoal { Id = "first-upgrade", Title = "Raise the standard", Detail = "Upgrade any owned property.", Target = 1 });
+            State.Goals.Add(new CompanyGoal { Id = "two-assets", Title = "Build your district", Detail = "Own two properties.", Target = 2 });
+            UpdateGoals();
+        }
+
+        private void UpdateGoals()
+        {
+            foreach (var goal in State.Goals)
+            {
+                goal.Progress = goal.Id == "first-upgrade"
+                    ? State.Properties.Count(property => property.IsOwned && property.Level > 1)
+                    : State.Properties.Count(property => property.IsOwned);
+            }
+        }
+
+        private void RefreshNpcActivities()
+        {
+            State.NpcActivities.Clear();
+            var target = State.Properties.FirstOrDefault(property => !property.IsOwned) ?? State.Properties.First();
+            var first = State.Day % 2 == 0 ? "Nova Estates" : "Anna Kowalska";
+            State.NpcActivities.Add(new NpcActivity { Investor = first, Title = State.Day % 2 == 0 ? "opened a pharmacy" : "bought a unit nearby", Detail = target.BuildingName + " · market activity on day " + State.Day });
+            State.NpcActivities.Add(new NpcActivity { Investor = "Riverside Investments", Title = "is watching an auction", Detail = target.Name + " · bid window closes tomorrow" });
         }
 
         private static void AddMarketProperties(GameState state)

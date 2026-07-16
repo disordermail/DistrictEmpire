@@ -132,7 +132,7 @@ namespace DistrictEmpire.Presentation
             metrics.Add(Metric("Rent ready", Money(game.State.RentReady), game.State.RentReady > 0 ? "income" : "neutral"));
             metrics.Add(Metric("Repairs", TaskCount().ToString(), TaskCount() > 0 ? "attention" : "neutral"));
             metrics.Add(Metric("Applications", owned.Sum(p => p.Stage == PropertyStage.Applications ? p.Applicants.Count : 0).ToString(), "neutral"));
-            metrics.Add(Metric("City rank", "#12", "neutral"));
+            metrics.Add(Metric("Goals ready", game.State.Goals.Count(goal => goal.Progress >= goal.Target && !goal.Claimed).ToString(), "neutral"));
             desk.Add(metrics); content.Add(desk);
 
             var rent = UiKit.Card(game.State.RentReady > 0 ? "income" : "neutral"); rent.AddToClassList("rent-card");
@@ -150,6 +150,7 @@ namespace DistrictEmpire.Presentation
             }, game.State.RentReady > 0 ? "income" : "secondary");
             collect.AddToClassList("rent-action"); rent.Add(collect); content.Add(rent);
             RenderLivingBriefing(owned);
+            RenderGoals();
 
             content.Add(SectionHeading("YOUR PORTFOLIO", owned.Count == 0 ? "Build your first asset" : "Act on the most important property first"));
             AddPropertyGroup("NEEDS A DECISION", owned.Where(p => p.Stage == PropertyStage.Applications || p.Stage == PropertyStage.ChoosingUse).ToList());
@@ -172,9 +173,27 @@ namespace DistrictEmpire.Presentation
             card.Add(UiKit.Text("TODAY'S CITY NEWS", 10, true, UiKit.Muted));
             card.Add(NewsLine("Maria paid rent", "Mokotow Starter · relationship +1", "income"));
             if (TaskCount() > 0) card.Add(NewsLine("Kitchen pipe needs attention", "Maria is waiting for a repair", "attention"));
-            card.Add(NewsLine("Anna Kowalska now owns 80%", "Riverside Apartments · nearby investor", "npc"));
-            card.Add(NewsLine("Summer festival starts tomorrow", "+15% tourism demand in Srodmiescie", "neutral"));
+            foreach (var activity in game.State.NpcActivities.Take(2))
+                card.Add(NewsLine(activity.Investor + " " + activity.Title, activity.Detail, "npc"));
+            var cityEvent = game.State.Events.FirstOrDefault();
+            if (cityEvent != null) card.Add(NewsLine(cityEvent.Title, cityEvent.Detail, "neutral"));
             if (owned.Any(p => p.Stage == PropertyStage.Applications)) card.Add(NewsLine("New applicants are waiting", "A decision can start a new lease today", "income"));
+            content.Add(card);
+        }
+
+        private void RenderGoals()
+        {
+            var available = game.State.Goals.Where(goal => !goal.Claimed).ToList();
+            if (available.Count == 0) return;
+            var card = UiKit.Card("briefing"); card.AddToClassList("news-card");
+            card.Add(UiKit.Text("COMPANY GOALS", 10, true, UiKit.Muted));
+            foreach (var goal in available)
+            {
+                card.Add(UiKit.Text(goal.Title + " · " + Math.Min(goal.Progress, goal.Target) + "/" + goal.Target, 13, true));
+                card.Add(UiKit.Text(goal.Detail, 10, false, UiKit.Muted));
+                if (goal.Progress >= goal.Target)
+                    card.Add(UiKit.Button("Claim 500 PLN + 2 influence", () => { if (game.ClaimGoal(goal.Id)) { Render(); ShowCelebration("GOAL COMPLETE", "500 PLN · +2 influence", "Your company is gaining momentum."); } }, "income"));
+            }
             content.Add(card);
         }
 
@@ -202,7 +221,8 @@ namespace DistrictEmpire.Presentation
             content.Add(SectionHeading("WARSAW INVESTMENT MAP", "What can I buy?"));
             content.Add(UiKit.Text("Tap a building to inspect its price, rent potential and current ownership.", 12, false, UiKit.Muted));
             var map = new VisualElement(); map.AddToClassList("map-stage");
-            var activity = UiKit.Text("Anna Kowalska owns 80% of Riverside Apartments", 10, true); activity.AddToClassList("map-activity"); map.Add(activity);
+            var live = game.State.NpcActivities.FirstOrDefault();
+            var activity = UiKit.Text(live == null ? "Market activity is loading" : live.Investor + " " + live.Title, 10, true); activity.AddToClassList("map-activity"); map.Add(activity);
             foreach (var property in game.State.Properties)
             {
                 var pin = new Button(() => { selectedPropertyId = property.Id; OpenPropertyFromMap(property); });
@@ -217,7 +237,9 @@ namespace DistrictEmpire.Presentation
             content.Add(map);
             var legend = UiKit.Card("neutral"); legend.AddToClassList("map-legend");
             legend.Add(UiKit.Text("YOUR BUILDINGS", 10, true, UiKit.Green)); legend.Add(UiKit.Text("Available properties are blue. Your assets are green.", 12, false, UiKit.Muted)); content.Add(legend);
-            var npc = UiKit.Card("briefing"); npc.AddToClassList("npc-card"); npc.Add(UiKit.Text("NEARBY INVESTOR ACTIVITY", 10, true, UiKit.Muted)); npc.Add(UiKit.Text("Anna Kowalska is one unit away from completing Riverside Apartments.", 13, true)); npc.Add(UiKit.Text("Buy before she controls the whole building.", 11, false, UiKit.Muted)); content.Add(npc);
+            var npc = UiKit.Card("briefing"); npc.AddToClassList("npc-card"); npc.Add(UiKit.Text("NEARBY INVESTOR ACTIVITY", 10, true, UiKit.Muted));
+            foreach (var item in game.State.NpcActivities) { npc.Add(UiKit.Text(item.Investor + " " + item.Title, 13, true)); npc.Add(UiKit.Text(item.Detail, 11, false, UiKit.Muted)); }
+            content.Add(npc);
         }
 
         private void OpenPropertyFromMap(Property property)
@@ -331,6 +353,7 @@ namespace DistrictEmpire.Presentation
             else if (property.Stage == PropertyStage.Available)
             {
                 var advertise = FlowCard("READY TO ADVERTISE", "Find the right tenant", "Your listing will accumulate views and applications shortly.");
+                if (!property.Renovated) advertise.Add(UiKit.Button("Renovate · " + Money(900 + property.Tier * 300), () => Renovate(property), "secondary"));
                 advertise.Add(UiKit.Button("Publish rental listing", () => { game.PublishListing(property.Id); Render(); }, "primary")); content.Add(advertise);
             }
             else if (property.Stage == PropertyStage.Listing)
@@ -354,6 +377,7 @@ namespace DistrictEmpire.Presentation
                 {
                     var applicantCard = UiKit.Card(); applicantCard.AddToClassList("applicant-card"); applicantCard.Add(UiKit.Text("APPLICANT", 10, true, UiKit.Muted));
                     applicantCard.Add(UiKit.Text(applicant.Name, 17, true)); applicantCard.Add(UiKit.Text(applicant.Role + " · " + Money(applicant.DailyRent) + " / day", 12, true, UiKit.Green)); applicantCard.Add(UiKit.Text(applicant.Story, 12, false, UiKit.Muted));
+                    if (!applicant.Negotiated) applicantCard.Add(UiKit.Button("Negotiate rent +" + Money(applicant.IsBusiness ? 120 : 60), () => { if (game.NegotiateApplicant(property.Id, applicant.Id)) { Render(); ShowToast("Offer improved. Decide whether to sign."); } }, "secondary"));
                     applicantCard.Add(UiKit.Button("Accept applicant", () => { game.SelectApplicant(property.Id, applicant.Id); ShowToast("Lease signed with " + applicant.Name + "."); Render(); }, "primary")); content.Add(applicantCard);
                 }
             }
@@ -361,6 +385,9 @@ namespace DistrictEmpire.Presentation
             {
                 var occupied = FlowCard("OCCUPIED", property.TenantName + " · " + property.TenantRole, property.TenantStory + "\nRelationship " + property.Relationship + "/100 · Next payment tomorrow");
                 if (property.Condition < 90) occupied.Add(UiKit.Button("Maintain property", () => { game.Repair(property.Id); Render(); }, "secondary")); content.Add(occupied);
+                if (!property.Renovated) occupied.Add(UiKit.Button("Renovate · " + Money(900 + property.Tier * 300), () => Renovate(property), "secondary"));
+                if (property.Level < 3) occupied.Add(UiKit.Button("Upgrade to level " + (property.Level + 1) + " · " + Money(1100 * property.Level * property.Tier), () => Upgrade(property), "primary"));
+                if (property.Popularity < 3) occupied.Add(UiKit.Button("Promote locally · 3 influence", () => Promote(property), "secondary"));
                 occupied.Add(UiKit.Button("End tenancy", () => { if (game.StartContractCancellation(property.Id)) { Render(); ShowToast("Contract cancellation started. The tenant has been notified."); } }, "danger"));
             }
             if (property.IsOwned && property.Stage == PropertyStage.Available)
@@ -374,7 +401,7 @@ namespace DistrictEmpire.Presentation
         private VisualElement PropertyFacts(Property property)
         {
             var facts = new VisualElement(); facts.AddToClassList("property-facts");
-            facts.Add(Fact("TIER", property.Tier.ToString())); facts.Add(Fact("VALUE", Money(property.Price))); facts.Add(Fact("RENT/DAY", Money(property.IsOwned && property.TenantDailyRent > 0 ? property.TenantDailyRent : property.BaseDailyRent))); facts.Add(Fact("CONDITION", property.Condition + "%")); return facts;
+            facts.Add(Fact("LEVEL", property.Level.ToString())); facts.Add(Fact("VALUE", Money(property.Price))); facts.Add(Fact("RENT/DAY", Money(property.IsOwned && property.TenantDailyRent > 0 ? property.TenantDailyRent : property.BaseDailyRent))); facts.Add(Fact("CONDITION", property.Condition + "%")); return facts;
         }
 
         private VisualElement BuildingCollectionCard(Property property)
@@ -506,6 +533,32 @@ namespace DistrictEmpire.Presentation
             card.Add(UiKit.Button("Keep my progress", () => root.Remove(overlay), "secondary")); overlay.Add(card); root.Add(overlay);
         }
 
+        private void Renovate(Property property)
+        {
+            if (game.Renovate(property.Id))
+            {
+                Render();
+                ShowCelebration("RENOVATION COMPLETE", "+rent potential", "The property is now more attractive to tenants.");
+            }
+            else ShowToast("You need more cash for this renovation.");
+        }
+
+        private void Upgrade(Property property)
+        {
+            if (game.UpgradeProperty(property.Id))
+            {
+                Render();
+                ShowCelebration("PROPERTY UPGRADED", "+rent potential", "A stronger property creates a stronger company.");
+            }
+            else ShowToast("You need more cash for this upgrade.");
+        }
+
+        private void Promote(Property property)
+        {
+            if (game.PromoteProperty(property.Id)) { Render(); ShowToast("Local popularity increased. Rent potential improved."); }
+            else ShowToast("You need 3 influence to promote this property.");
+        }
+
         private VisualElement PropertyCard(Property property, bool showAction)
         {
             var tone = property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : "attention";
@@ -534,7 +587,7 @@ namespace DistrictEmpire.Presentation
         private int BusinessRent() => game.State.Properties.Where(p => p.IsOwned && p.Use == PropertyUse.Business && p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent);
         private int TaskCount() => game.State.Properties.Count(p => p.IsOwned && p.Condition < 90);
         private int CompanyValue() => game.State.Properties.Where(p => p.IsOwned).Sum(p => p.Price) + game.State.Cash;
-        private string LifecycleSignature() => game.State.Day + ":" + game.State.RentReady + ":" + game.State.DailyRewardClaimed + "|" + string.Join("|", game.State.Properties.Where(property => property.IsOwned).Select(property => property.Id + ":" + property.Stage + ":" + property.Applicants.Count + ":" + property.Condition));
+        private string LifecycleSignature() => game.State.Day + ":" + game.State.RentReady + ":" + game.State.DailyRewardClaimed + ":" + string.Join(";", game.State.NpcActivities.Select(activity => activity.Title)) + "|" + string.Join("|", game.State.Properties.Where(property => property.IsOwned).Select(property => property.Id + ":" + property.Stage + ":" + property.Applicants.Count + ":" + property.Condition + ":" + property.Level + ":" + property.Popularity));
         private static string Money(int value) => value.ToString("N0") + " PLN";
         private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.CancellingContract ? 1 : property.Condition < 90 ? 2 : 3;
         private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : property.Stage == PropertyStage.CancellingContract ? "Tenant is preparing to leave" : property.Stage == PropertyStage.ForSale ? "Sale offer is waiting" : "Choose a use and advertise to start earning";
