@@ -68,6 +68,7 @@ namespace DistrictEmpire.Domain
         public int CompanyLevel = 1;
         public bool DailyRewardClaimed;
         public int Day = 1;
+        public int EventsDay;
         public int RentReady;
         public long LastClockUtcTicks;
         public List<Property> Properties = new();

@@ -24,7 +24,16 @@ namespace DistrictEmpire.Application
         public void Tick()
         {
             var now = DateTime.UtcNow;
+            var dayBefore = State.Day;
             clock.Advance(State, now);
+            if (State.Day > dayBefore)
+            {
+                var elapsedDays = State.Day - dayBefore;
+                State.DailyRewardClaimed = false;
+                RefreshDailyEvents();
+                foreach (var property in State.Properties.Where(property => property.IsOwned && property.Stage == PropertyStage.Occupied))
+                    property.Condition = Math.Max(55, property.Condition - elapsedDays * 2);
+            }
             foreach (var property in State.Properties.Where(p => p.IsOwned))
             {
                 if (property.Stage == PropertyStage.Notary && now.Ticks >= property.NotaryCompleteAtUtcTicks)
@@ -71,6 +80,7 @@ namespace DistrictEmpire.Application
             if (property == null || property.IsOwned || State.Cash < property.Price) return false;
             State.Cash -= property.Price;
             property.IsOwned = true;
+            property.BuildingOwnedUnits = Math.Max(1, property.BuildingOwnedUnits);
             property.Stage = PropertyStage.Notary;
             property.NotaryCompleteAtUtcTicks = DateTime.UtcNow.AddSeconds(12).Ticks;
             repository.Save(State);
@@ -218,7 +228,7 @@ namespace DistrictEmpire.Application
             var state = new GameState { LastClockUtcTicks = DateTime.UtcNow.Ticks, RentReady = 620 };
             state.Properties.Add(new Property { Id = "old-town", Name = "Mokotow Starter", District = "Mokotow", Icon = "HOME", Price = 18000, BaseDailyRent = 620, Tier = 1, Category = "Apartments", MapX = 18, MapY = 58, Condition = 78, IsOwned = true, Stage = PropertyStage.Occupied, Use = PropertyUse.Residential, TenantName = "Maria Kowalska", TenantRole = "Teacher · single mother", TenantStory = "Maria teaches nearby and is building a new life in Mokotow.", Relationship = 62, TenantDailyRent = 620, BuildingName = "Mokotow Gardens", BuildingOwnedUnits = 3, BuildingTotalUnits = 10 });
             AddMarketProperties(state);
-            AddCityEvents(state);
+            RefreshDailyEvents(state);
             return state;
         }
 
@@ -258,7 +268,7 @@ namespace DistrictEmpire.Application
                 property.BuildingOwnedUnits = property.IsOwned ? 1 : 0;
             }
             if (State.Events == null) State.Events = new List<CityEvent>();
-            if (State.Events.Count == 0) AddCityEvents(State);
+            if (State.EventsDay != State.Day || State.Events.Count == 0) RefreshDailyEvents();
             UpdateCompanyLevel();
             repository.Save(State);
         }
@@ -276,10 +286,18 @@ namespace DistrictEmpire.Application
             state.Properties.Add(new Property { Id = "srodmiescie-house", Name = "Srodmiescie House", District = "Srodmiescie", Icon = "PRE", Price = 74000, BaseDailyRent = 2360, Tier = 3, Category = "Premium", MapX = 49, MapY = 61, Condition = 95, Stage = PropertyStage.Available });
         }
 
-        private static void AddCityEvents(GameState state)
+        private void RefreshDailyEvents()
         {
-            state.Events.Add(new CityEvent { Id = "summer-festival", Title = "Summer Festival", Detail = "Tourism demand is rising. Promote your next business listing.", Reward = "+3 influence · +10 XP" });
-            state.Events.Add(new CityEvent { Id = "district-cleanup", Title = "District Cleanup", Detail = "Support Mokotow residents and strengthen your company reputation.", Reward = "+3 influence · +10 XP" });
+            RefreshDailyEvents(State);
+        }
+
+        private static void RefreshDailyEvents(GameState state)
+        {
+            state.Events.Clear();
+            state.EventsDay = state.Day;
+            var evenDay = state.Day % 2 == 0;
+            state.Events.Add(new CityEvent { Id = "festival-" + state.Day, Title = evenDay ? "Night Market" : "Summer Festival", Detail = evenDay ? "Local shops are looking for more foot traffic tonight." : "Tourism demand is rising. Promote your next business listing.", Reward = "+3 influence · +10 XP" });
+            state.Events.Add(new CityEvent { Id = "district-" + state.Day, Title = evenDay ? "Landlord Meeting" : "District Cleanup", Detail = evenDay ? "Meet local owners and learn about an upcoming auction." : "Support Mokotow residents and strengthen your company reputation.", Reward = "+3 influence · +10 XP" });
         }
 
         private static List<Applicant> CreateApplicants(PropertyUse use) => use == PropertyUse.Business

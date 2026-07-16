@@ -58,6 +58,54 @@ namespace DistrictEmpire.Editor
             Debug.Log("District Empire core playtest passed: rent, shop, repair, contract cancellation, sale, event, buy, notary, use choice, listing, tenant selection and reset.");
         }
 
+        [MenuItem("District Empire/Simulate 30 Days")]
+        public static void SimulateThirtyDays()
+        {
+            var service = new GameService(new MemoryRepository(), new GameClock());
+            var claimedRewards = 0;
+            var claimedEvents = 0;
+            var repairs = 0;
+            for (var day = 1; day <= 30; day++)
+            {
+                AdvanceOneDay(service);
+                if (!service.State.DailyRewardClaimed && service.ClaimDailyReward()) claimedRewards++;
+                service.CollectRent();
+                foreach (var property in service.State.Properties.FindAll(property => property.IsOwned && property.Condition < 90))
+                    if (service.Repair(property.Id)) repairs++;
+
+                foreach (var property in service.State.Properties.FindAll(property => !property.IsOwned && property.Price <= service.State.Cash))
+                {
+                    service.Buy(property.Id);
+                    service.SpeedUpNotary(property.Id);
+                    service.ChooseUse(property.Id, day % 2 == 0 ? PropertyUse.Business : PropertyUse.Residential);
+                    service.PublishListing(property.Id);
+                    property.ListingAvailableAtUtcTicks = DateTime.UtcNow.AddSeconds(-1).Ticks;
+                    service.Tick();
+                    service.SelectApplicant(property.Id, property.Applicants[0].Id);
+                }
+
+                foreach (var cityEvent in service.State.Events.FindAll(cityEvent => !cityEvent.Claimed))
+                    if (service.ClaimEvent(cityEvent.Id)) claimedEvents++;
+                var owned = service.State.Properties.FindAll(property => property.IsOwned);
+                Debug.Log("Day " + day + ": cash=" + service.State.Cash + ", owned=" + owned.Count + ", rentReady=" + service.State.RentReady + ", events=" + service.State.Events.Count);
+            }
+
+            var properties = service.State.Properties;
+            Require(properties.Exists(property => property.IsOwned && property.Use == PropertyUse.Residential), "30-day simulation never retained a residential property.");
+            Require(properties.Exists(property => property.IsOwned && property.Use == PropertyUse.Business), "30-day simulation never created a business property.");
+            Require(service.State.Cash > 0, "30-day simulation exhausted all cash.");
+            Require(claimedRewards == 30, "Daily reward did not refresh for all 30 simulated days.");
+            Require(claimedEvents == 60, "City events did not refresh for all 30 simulated days.");
+            Require(repairs >= 4, "Property wear did not create enough maintenance decisions.");
+            Debug.Log("District Empire 30-day simulation passed.");
+        }
+
+        private static void AdvanceOneDay(GameService service)
+        {
+            service.State.LastClockUtcTicks = DateTime.UtcNow.AddSeconds(-1441).Ticks;
+            service.Tick();
+        }
+
         private static Property RequireProperty(GameService service, string id)
         {
             var property = service.State.Properties.Find(candidate => candidate.Id == id);
