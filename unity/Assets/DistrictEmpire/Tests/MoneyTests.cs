@@ -2,21 +2,22 @@ using System;
 using DistrictEmpire.Domain;
 using NUnit.Framework;
 
-namespace DistrictEmpire.Tests;
-
-public sealed class MoneyTests
+namespace DistrictEmpire.Tests
 {
-    [Test]
-    public void Constructor_NormalizesCurrencyCode()
+    public sealed class MoneyTests
     {
-        var money = new Money(100, "pln");
+        [Test]
+        public void Constructor_NormalizesCurrencyCode()
+        {
+            var money = new Money(100, "pln");
 
-        Assert.AreEqual("PLN", money.CurrencyCode);
-    }
+            Assert.AreEqual("PLN", money.CurrencyCode);
+        }
 
-    [Test]
-    public void Constructor_RejectsNegativeAmounts()
-    {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Money(-1, "PLN"));
+        [Test]
+        public void Constructor_RejectsNegativeAmounts()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new Money(-1, "PLN"));
+        }
     }
 }

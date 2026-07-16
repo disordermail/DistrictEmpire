@@ -1,20 +1,19 @@
 using System;
 
-namespace DistrictEmpire.Domain;
-
-public readonly record struct CountryCode
+namespace DistrictEmpire.Domain
 {
-    public CountryCode(string value)
+    public readonly struct CountryCode
     {
-        if (string.IsNullOrWhiteSpace(value) || value.Length != 2)
+        public CountryCode(string value)
         {
-            throw new ArgumentException("Country code must use ISO 3166-1 alpha-2 format.", nameof(value));
+            if (string.IsNullOrWhiteSpace(value) || value.Length != 2)
+                throw new ArgumentException("Country code must use ISO 3166-1 alpha-2 format.", nameof(value));
+
+            Value = value.ToUpperInvariant();
         }
 
-        Value = value.ToUpperInvariant();
+        public string Value { get; }
+
+        public override string ToString() { return Value; }
     }
-
-    public string Value { get; }
-
-    public override string ToString() => Value;
 }

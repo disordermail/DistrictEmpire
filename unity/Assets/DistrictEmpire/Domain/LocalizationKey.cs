@@ -1,20 +1,19 @@
 using System;
 
-namespace DistrictEmpire.Domain;
-
-public readonly record struct LocalizationKey
+namespace DistrictEmpire.Domain
 {
-    public LocalizationKey(string value)
+    public readonly struct LocalizationKey
     {
-        if (string.IsNullOrWhiteSpace(value))
+        public LocalizationKey(string value)
         {
-            throw new ArgumentException("Localization key is required.", nameof(value));
+            if (string.IsNullOrWhiteSpace(value))
+                throw new ArgumentException("Localization key is required.", nameof(value));
+
+            Value = value;
         }
 
-        Value = value;
+        public string Value { get; }
+
+        public override string ToString() { return Value; }
     }
-
-    public string Value { get; }
-
-    public override string ToString() => Value;
 }

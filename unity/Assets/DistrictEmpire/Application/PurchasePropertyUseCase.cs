@@ -3,37 +3,27 @@ using System.Threading;
 using System.Threading.Tasks;
 using DistrictEmpire.Domain;
 
-namespace DistrictEmpire.Application;
-
-public sealed class PurchasePropertyUseCase
+namespace DistrictEmpire.Application
 {
-    private readonly IServerClock serverClock;
-    private readonly IWalletGateway walletGateway;
-
-    public PurchasePropertyUseCase(IServerClock serverClock, IWalletGateway walletGateway)
+    public sealed class PurchasePropertyUseCase
     {
-        this.serverClock = serverClock;
-        this.walletGateway = walletGateway;
-    }
+        private readonly IServerClock serverClock;
+        private readonly IWalletGateway walletGateway;
 
-    public async Task<WalletLedgerEntry> ExecuteAsync(
-        string playerId,
-        Money purchasePrice,
-        string idempotencyKey,
-        CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        public PurchasePropertyUseCase(IServerClock serverClock, IWalletGateway walletGateway)
         {
-            throw new ArgumentException("Idempotency key is required.", nameof(idempotencyKey));
+            this.serverClock = serverClock;
+            this.walletGateway = walletGateway;
         }
 
-        await serverClock.GetNowAsync(cancellationToken);
+        public async Task<WalletLedgerEntry> ExecuteAsync(string playerId, Money purchasePrice, string idempotencyKey, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(idempotencyKey))
+                throw new ArgumentException("Idempotency key is required.", nameof(idempotencyKey));
 
-        return await walletGateway.AddLedgerEntryAsync(
-            playerId,
-            purchasePrice,
-            "property_purchase",
-            idempotencyKey,
-            cancellationToken);
+            await serverClock.GetNowAsync(cancellationToken);
+
+            return await walletGateway.AddLedgerEntryAsync(playerId, purchasePrice, "property_purchase", idempotencyKey, cancellationToken);
+        }
     }
 }
