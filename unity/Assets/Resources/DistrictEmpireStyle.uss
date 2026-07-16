@@ -1,4 +1,4 @@
-.app-shell { background-color: #edf3f7; color: #15212d; }
+.app-shell { background-color: #e8eff5; color: #101b28; }
 .top-header { background-color: #ffffff; padding-left: 18px; padding-right: 18px; padding-top: 18px; padding-bottom: 12px; border-bottom-width: 1px; border-bottom-color: #dce4ea; }
 .header-row { flex-direction: row; justify-content: space-between; align-items: center; }
 .eyebrow { color: #596a79; font-size: 11px; -unity-font-style: bold; }
@@ -11,12 +11,12 @@
 .wallet-chip { flex-grow: 1; min-width: 0; min-height: 58px; justify-content: center; padding: 8px 7px; overflow: hidden; background-color: #f7fafc; border-width: 1px; border-color: #dce4ea; border-radius: 16px; }
 .wallet-chip-label { color: #596a79; font-size: 10px; }
 .wallet-chip-value { color: #07875f; font-size: 12px; -unity-font-style: bold; }
-.screen-scroll { flex-grow: 1; padding-left: 14px; padding-right: 14px; padding-top: 14px; padding-bottom: 14px; background-color: #edf3f7; }
-.de-card { padding: 14px; margin-bottom: 10px; background-color: #ffffff; border-width: 1px; border-color: #dce4ea; border-radius: 9px; }
-.de-card-income { background-color: #e5f6ef; border-color: #9bd9c2; }
-.de-card-waiting { background-color: #fff3da; border-color: #f0d29c; }
-.de-card-attention { background-color: #fff0e5; border-color: #efc49f; }
-.de-card-briefing { background-color: #eaf1ff; border-color: #b4caef; }
+.screen-scroll { flex-grow: 1; padding-left: 14px; padding-right: 14px; padding-top: 14px; padding-bottom: 14px; background-color: #e8eff5; }
+.de-card { padding: 14px; margin-bottom: 10px; background-color: #ffffff; border-width: 1px; border-color: #c9d6e1; border-radius: 9px; }
+.de-card-income { background-color: #d8f4e7; border-color: #56b98a; border-left-width: 5px; }
+.de-card-waiting { background-color: #fff0ce; border-color: #e0a33a; border-left-width: 5px; }
+.de-card-attention { background-color: #ffe6df; border-color: #d8604b; border-left-width: 5px; }
+.de-card-briefing { background-color: #dce9ff; border-color: #6391df; border-left-width: 5px; }
 .de-text { color: #15212d; font-size: 14px; }
 .de-text-title { font-size: 18px; -unity-font-style: bold; }
 .de-text-amount { color: #046c4c; font-size: 25px; -unity-font-style: bold; }
@@ -95,3 +95,6 @@
 .dream-card { padding: 15px; border-color: #e4c274; }
 .celebration-overlay { position: absolute; left: 0; top: 0; right: 0; bottom: 0; justify-content: center; align-items: center; padding-left: 28px; padding-right: 28px; background-color: rgba(21, 33, 45, 0.4); }
 .celebration-card { width: 100%; max-width: 360px; padding: 22px; border-radius: 12px; }
+.auction-refresh-hint { align-self: flex-start; margin-top: 2px; margin-bottom: 8px; padding: 7px 10px; background-color: #eaf1ff; border-width: 1px; border-color: #8eb2ee; border-radius: 12px; }
+.market-card { border-left-width: 5px; border-left-color: #245ec7; }
+.rent-card { border-left-width: 5px; border-left-color: #07875f; }

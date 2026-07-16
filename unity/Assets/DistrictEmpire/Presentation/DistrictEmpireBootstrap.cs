@@ -13,11 +13,14 @@ namespace DistrictEmpire.Presentation
     {
         private GameService game;
         private VisualElement root;
-        private VisualElement content;
+        private ScrollView content;
         private string screen = "Portfolio";
         private string selectedPropertyId = "old-town";
         private bool menuOpen;
         private float nextClockRefresh;
+        private float auctionPullStartY;
+        private bool auctionPullArmed;
+        private int auctionRefreshCount;
 
         private void Awake()
         {
@@ -44,12 +47,13 @@ namespace DistrictEmpire.Presentation
             root.Clear();
             root.Add(BuildHeader());
             content = new ScrollView { name = "ScreenContent", verticalScrollerVisibility = ScrollerVisibility.Hidden };
+            content.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
             content.AddToClassList("screen-scroll");
             root.Add(content);
             switch (screen)
             {
                 case "Map": RenderMap(); break;
-                case "Invest": RenderInvest(); break;
+                case "Auctions": RenderAuctions(); break;
                 case "Tasks": RenderTasks(); break;
                 case "Property": RenderProperty(); break;
                 case "Company": RenderCompany(); break;
@@ -99,7 +103,7 @@ namespace DistrictEmpire.Presentation
             var nav = new VisualElement(); nav.AddToClassList("bottom-nav");
             AddNavButton(nav, "Portfolio", "PORTFOLIO", "▣");
             AddNavButton(nav, "Map", "MAP", "⌖");
-            AddNavButton(nav, "Invest", "INVEST", "◆");
+            AddNavButton(nav, "Auctions", "AUCTIONS", "$");
             AddNavButton(nav, "Tasks", "TASKS", "✓");
             return nav;
         }
@@ -137,7 +141,7 @@ namespace DistrictEmpire.Presentation
             copy.Add(UiKit.Text(game.State.RentReady > 0 ? Money(game.State.RentReady) : "Tomorrow", 24, true));
             copy.Add(UiKit.Text($"{Money(ResidentialRent())} homes · {Money(BusinessRent())} businesses", 11, false, UiKit.Muted));
             rent.Add(copy);
-            var collect = UiKit.Button(game.State.RentReady > 0 ? "Collect rent" : "Rent schedule", () =>
+            var collect = UiKit.Button(game.State.RentReady > 0 ? "$ Collect rent" : "View rent schedule", () =>
             {
                 var collected = game.CollectRent();
                 Render();
@@ -223,14 +227,16 @@ namespace DistrictEmpire.Presentation
             Render();
         }
 
-        private void RenderInvest()
+        private void RenderAuctions()
         {
-            content.Add(SectionHeading("OPPORTUNITIES IN WARSAW", "Invest"));
+            ConfigureAuctionPullToRefresh();
+            content.Add(SectionHeading("AUCTION HOUSE", "What can I win today?"));
+            var refresh = UiKit.Text(auctionRefreshCount == 0 ? "Pull down to refresh live auctions" : "Auction board refreshed just now", 11, true, UiKit.Blue); refresh.AddToClassList("auction-refresh-hint"); content.Add(refresh);
             var tabs = new VisualElement(); tabs.AddToClassList("market-tabs");
-            foreach (var category in new[] { "All", "Starter", "Retail", "Auctions" })
+            foreach (var category in new[] { "Live", "Starter", "Retail", "Luxury" })
             {
-                var tab = UiKit.Button(category, () => ShowToast(category == "Auctions" ? "No live auctions right now. Market listings refresh daily." : category + " listings selected."), "filter");
-                if (category == "All") tab.AddToClassList("filter-active"); tabs.Add(tab);
+                var tab = UiKit.Button(category, () => ShowToast(category + " auction filter selected."), "filter");
+                if (category == "Live") tab.AddToClassList("filter-active"); tabs.Add(tab);
             }
             content.Add(tabs);
             foreach (var property in game.State.Properties.Where(p => !p.IsOwned).OrderBy(p => p.Price))
@@ -240,13 +246,34 @@ namespace DistrictEmpire.Presentation
                 var identity = new VisualElement();
                 identity.Add(UiKit.Text(property.Icon, 11, true, UiKit.Blue)); identity.Add(UiKit.Text(property.Name, 17, true)); identity.Add(UiKit.Text(property.District + " · " + property.Category, 11, false, UiKit.Muted));
                 top.Add(identity); top.Add(Badge("TIER " + property.Tier, "tier-badge")); card.Add(top);
-                card.Add(UiKit.Text("Estimated daily rent " + Money(property.BaseDailyRent) + " · Condition " + property.Condition + "%", 12, false, UiKit.Muted));
+                card.Add(UiKit.Text("Bid " + Money(property.Price) + " · " + (property.Tier == 3 ? "Ends tomorrow" : "Ends in 18 min") + " · Est. " + Money(property.BaseDailyRent) + " / day", 12, false, UiKit.Muted));
                 var affordable = game.State.Cash >= property.Price;
-                var buy = UiKit.Button(affordable ? "Buy now · " + Money(property.Price) : "Need " + Money(property.Price - game.State.Cash) + " more", () => BuyFromMarket(property), affordable ? "income" : "locked");
+                var buy = UiKit.Button(affordable ? "Place bid · " + Money(property.Price) : "Need " + Money(property.Price - game.State.Cash) + " more", () => BuyFromMarket(property), affordable ? "income" : "locked");
                 if (!affordable) { buy.SetEnabled(false); buy.tooltip = "Build cash flow to afford this property."; }
                 card.Add(buy); content.Add(card);
             }
             var dream = UiKit.Card("waiting"); dream.AddToClassList("dream-card"); dream.Add(UiKit.Text("DREAM PROPERTY", 10, true, UiKit.Amber)); dream.Add(UiKit.Text("Royal Riverside Tower", 19, true)); dream.Add(UiKit.Text("Locked · unlock at Company Level 4", 12, true, UiKit.Amber)); dream.Add(UiKit.Text("Estimated rent 9,200 PLN / day · Luxury auction tomorrow", 11, false, UiKit.Muted)); content.Add(dream);
+        }
+
+        private void ConfigureAuctionPullToRefresh()
+        {
+            content.RegisterCallback<PointerDownEvent>(evt =>
+            {
+                auctionPullStartY = evt.position.y;
+                auctionPullArmed = content.scrollOffset.y <= 0;
+            });
+            content.RegisterCallback<PointerUpEvent>(evt =>
+            {
+                if (auctionPullArmed && evt.position.y - auctionPullStartY > 60f && content.scrollOffset.y <= 2f) RefreshAuctions();
+                auctionPullArmed = false;
+            });
+        }
+
+        private void RefreshAuctions()
+        {
+            auctionRefreshCount++;
+            Render();
+            ShowCelebration("AUCTION BOARD REFRESHED", "New bids visible", "Anna Kowalska and Nova Estates are watching nearby listings.");
         }
 
         private void BuyFromMarket(Property property)
@@ -422,7 +449,7 @@ namespace DistrictEmpire.Presentation
             var profileText = new VisualElement(); profileText.Add(UiKit.Text("Paweł W.", 17, true)); profileText.Add(UiKit.Text("CEO · District Empire", 11, false, UiKit.Muted)); profile.Add(profileText); menu.Add(profile);
             menu.Add(UiKit.Text("Company value " + Money(CompanyValue()), 16, true));
             AddMenuSection(menu, "YOUR COMPANY", new[] { "Company", "Finances", "Employees", "Skills" }, overlay);
-            AddMenuSection(menu, "OPPORTUNITIES", new[] { "Auctions", "Rankings", "Events & News" }, overlay);
+            AddMenuSection(menu, "OPPORTUNITIES", new[] { "Rankings", "Events & News" }, overlay);
             AddMenuSection(menu, "ACCOUNT", new[] { "Shop", "Friends", "Settings & Help" }, overlay);
             overlay.Add(menu); root.Add(overlay);
         }
@@ -438,7 +465,6 @@ namespace DistrictEmpire.Presentation
                     root.Remove(overlay);
                     menuOpen = false;
                     if (entry == "Company" || entry == "Finances" || entry == "Employees" || entry == "Skills") { screen = "Company"; Render(); }
-                    else if (entry == "Auctions") { screen = "Invest"; Render(); ShowToast("Auctions category selected."); }
                     else if (entry == "Shop") { screen = "Shop"; Render(); }
                     else if (entry == "Events & News") { screen = "Events"; Render(); }
                     else ShowToast(entry + " is coming in the next local prototype pass.");
@@ -512,7 +538,7 @@ namespace DistrictEmpire.Presentation
         private static string Money(int value) => value.ToString("N0") + " PLN";
         private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.CancellingContract ? 1 : property.Condition < 90 ? 2 : 3;
         private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : property.Stage == PropertyStage.CancellingContract ? "Tenant is preparing to leave" : property.Stage == PropertyStage.ForSale ? "Sale offer is waiting" : "Choose a use and advertise to start earning";
-        private static string PropertyActionLabel(Property property) => property.Condition < 90 ? "Repair pipe" : property.Stage == PropertyStage.Notary ? "Sign documents" : property.Stage == PropertyStage.CancellingContract ? "Check move-out" : property.Stage == PropertyStage.ForSale ? "Review sale offer" : property.Stage == PropertyStage.ChoosingUse ? "Choose property use" : property.Stage == PropertyStage.Listing ? "Check listing progress" : property.Stage == PropertyStage.Applications ? "Choose tenant" : property.Stage == PropertyStage.Occupied ? "View tenant" : "Publish listing";
+        private static string PropertyActionLabel(Property property) => property.Condition < 90 ? "! Repair pipe" : property.Stage == PropertyStage.Notary ? "> Sign documents" : property.Stage == PropertyStage.CancellingContract ? "> Check move-out" : property.Stage == PropertyStage.ForSale ? "$ Review sale offer" : property.Stage == PropertyStage.ChoosingUse ? "+ Choose property use" : property.Stage == PropertyStage.Listing ? "> Check listing progress" : property.Stage == PropertyStage.Applications ? "+ Choose tenant" : property.Stage == PropertyStage.Occupied ? "> View tenant" : "+ Publish listing";
         private static StyleColor StatusColor(Property property) => property.Stage == PropertyStage.Occupied ? UiKit.Green : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? UiKit.Amber : UiKit.Blue;
         private static string StatusTone(Property property) => property.Condition < 90 ? "problem" : property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing || property.Stage == PropertyStage.CancellingContract || property.Stage == PropertyStage.ForSale ? "waiting" : property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse ? "decision" : "managed";
         private string MapPinClass(Property property) => property.Condition < 90 && property.IsOwned ? "map-pin-problem" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing || property.Stage == PropertyStage.CancellingContract || property.Stage == PropertyStage.ForSale ? "map-pin-waiting" : property.IsOwned ? "map-pin-owned" : property.Price > game.State.Cash ? "map-pin-locked" : property.Tier >= 3 ? "map-pin-dream" : "map-pin-available";
