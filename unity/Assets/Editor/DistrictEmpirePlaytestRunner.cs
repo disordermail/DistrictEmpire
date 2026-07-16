@@ -17,6 +17,9 @@ namespace DistrictEmpire.Editor
             Require(!string.IsNullOrEmpty(starter.TenantStory), "Starter tenant story is missing.");
             Require(service.CollectRent(), "Rent collection failed.");
             Require(service.State.RentReady == 0, "Collected rent remained in the wallet.");
+            Require(service.ClaimDailyReward(), "Daily reward claim failed.");
+            Require(!service.ClaimDailyReward(), "Daily reward can be claimed twice.");
+            Require(service.BuyInfluence(), "Influence purchase failed.");
             Require(service.Repair(starter.Id), "Maintenance action failed.");
 
             var studio = RequireProperty(service, "riverside");
@@ -35,7 +38,7 @@ namespace DistrictEmpire.Editor
             Require(studio.Stage == PropertyStage.Occupied, "Tenant selection failed.");
             Require(!string.IsNullOrEmpty(studio.TenantStory), "Selected tenant story is missing.");
 
-            Debug.Log("District Empire core playtest passed: rent, repair, buy, notary, use choice, listing, applications and tenant selection.");
+            Debug.Log("District Empire core playtest passed: rent, shop, repair, buy, notary, use choice, listing, applications and tenant selection.");
         }
 
         private static Property RequireProperty(GameService service, string id)

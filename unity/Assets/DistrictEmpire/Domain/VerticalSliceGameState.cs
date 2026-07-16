@@ -54,6 +54,7 @@ namespace DistrictEmpire.Domain
         public int Influence = 35;
         public int Xp;
         public int CompanyLevel = 1;
+        public bool DailyRewardClaimed;
         public int Day = 1;
         public int RentReady;
         public long LastClockUtcTicks;

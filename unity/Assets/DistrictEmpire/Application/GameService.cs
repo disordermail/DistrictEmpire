@@ -95,6 +95,27 @@ namespace DistrictEmpire.Application
             return true;
         }
 
+        public bool ClaimDailyReward()
+        {
+            if (State.DailyRewardClaimed) return false;
+            State.DailyRewardClaimed = true;
+            State.Cash += 750;
+            State.Xp += 15;
+            UpdateCompanyLevel();
+            repository.Save(State);
+            return true;
+        }
+
+        public bool BuyInfluence()
+        {
+            const int cashCost = 600;
+            if (State.Cash < cashCost) return false;
+            State.Cash -= cashCost;
+            State.Influence += 5;
+            repository.Save(State);
+            return true;
+        }
+
         public void PublishListing(string propertyId)
         {
             var property = Find(propertyId);

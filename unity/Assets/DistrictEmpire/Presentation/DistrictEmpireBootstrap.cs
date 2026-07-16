@@ -53,6 +53,7 @@ namespace DistrictEmpire.Presentation
                 case "Tasks": RenderTasks(); break;
                 case "Property": RenderProperty(); break;
                 case "Company": RenderCompany(); break;
+                case "Shop": RenderShop(); break;
                 default: RenderPortfolio(); break;
             }
             root.Add(BuildNav());
@@ -363,6 +364,22 @@ namespace DistrictEmpire.Presentation
             }
         }
 
+        private void RenderShop()
+        {
+            content.Add(SectionHeading("COMPANY SUPPLIES", "Shop"));
+            content.Add(UiKit.Text("Choose one useful boost for today's property work.", 12, false, UiKit.Muted));
+
+            var reward = UiKit.Card(game.State.DailyRewardClaimed ? "neutral" : "income"); reward.AddToClassList("shop-card");
+            reward.Add(UiKit.Text("DAILY REWARD", 10, true, game.State.DailyRewardClaimed ? UiKit.Muted : UiKit.Green)); reward.Add(UiKit.Text(game.State.DailyRewardClaimed ? "Claimed today" : "750 PLN + 15 XP", 19, true));
+            if (!game.State.DailyRewardClaimed) reward.Add(UiKit.Button("Claim daily reward", () => { if (game.ClaimDailyReward()) { Render(); ShowCelebration("DAILY REWARD", "+750 PLN  ·  +15 XP", "Your company has fresh capital for today's decisions."); } }, "income"));
+            content.Add(reward);
+
+            var influence = UiKit.Card("briefing"); influence.AddToClassList("shop-card"); influence.Add(UiKit.Text("INFLUENCE PACK", 10, true, UiKit.Blue)); influence.Add(UiKit.Text("+5 influence", 19, true)); influence.Add(UiKit.Text("Useful for speeding up notary documents.", 12, false, UiKit.Muted));
+            influence.Add(UiKit.Button("Buy for 600 PLN", () => { if (game.BuyInfluence()) { Render(); ShowToast("Influence added to your company."); } else ShowToast("You need 600 PLN."); }, "primary")); content.Add(influence);
+
+            content.Add(UiKit.Button("Back to Portfolio", () => { screen = "Portfolio"; Render(); }, "secondary"));
+        }
+
         private void ShowMenu()
         {
             if (menuOpen) return;
@@ -391,6 +408,7 @@ namespace DistrictEmpire.Presentation
                     menuOpen = false;
                     if (entry == "Company" || entry == "Finances" || entry == "Employees" || entry == "Skills") { screen = "Company"; Render(); }
                     else if (entry == "Auctions") { screen = "Invest"; Render(); ShowToast("Auctions category selected."); }
+                    else if (entry == "Shop") { screen = "Shop"; Render(); }
                     else ShowToast(entry + " is coming in the next local prototype pass.");
                 }, isLocked ? "locked" : "menu");
                 if (isLocked)
@@ -410,7 +428,7 @@ namespace DistrictEmpire.Presentation
 
         private void ShowToast(string message)
         {
-            var toast = UiKit.Text(message, 12, true); toast.AddToClassList("toast"); root.Add(toast);
+            var toast = UiKit.Text(message, 12, true, new StyleColor(Color.white)); toast.AddToClassList("toast"); root.Add(toast);
             toast.schedule.Execute(() => { if (toast.parent != null) toast.parent.Remove(toast); }).StartingIn(2600);
         }
 
