@@ -154,9 +154,10 @@ namespace DistrictEmpire.Presentation
             rent.Add(copy);
             var collect = UiKit.Button(game.State.RentReady > 0 ? "$ Collect rent" : "View rent schedule", () =>
             {
+                var amount = game.State.RentReady;
                 var collected = game.CollectRent();
                 Render();
-                if (collected) ShowCelebration("RENT COLLECTED", "+25 XP  ·  +1 influence", "Maria paid her rent. Your company reputation improved.");
+                if (collected) ShowCelebration("RENT COLLECTED", "+" + Money(amount), "Maria paid her rent. +25 XP · +1 influence");
                 else ShowToast("Maria's next payment is due tomorrow.");
             }, game.State.RentReady > 0 ? "income" : "secondary");
             collect.AddToClassList("rent-action"); rent.Add(collect); content.Add(rent);
@@ -266,7 +267,14 @@ namespace DistrictEmpire.Presentation
             sheet.Add(UiKit.Text(property.Stage == PropertyStage.Occupied ? "Income " + Money(game.EffectiveDailyRent(property)) + " / day" : "Potential " + Money(property.BaseDailyRent) + " / day", 13, true, UiKit.Green));
             var share = property.BuildingTotalUnits == 0 ? 0 : property.BuildingOwnedUnits * 100 / property.BuildingTotalUnits;
             sheet.Add(UiKit.Text("Building share " + property.BuildingOwnedUnits + "/" + property.BuildingTotalUnits + " · " + share + "% controlled", 11, true, UiKit.Blue));
-            sheet.Add(UiKit.Button(MapActionLabel(property), () => RunMapAction(property), "primary"));
+            var affordable = property.IsOwned || game.State.Cash >= property.Price;
+            var action = UiKit.Button(affordable ? MapActionLabel(property) : "Need " + Money(property.Price - game.State.Cash), () => RunMapAction(property), affordable ? "primary" : "locked");
+            if (!affordable)
+            {
+                action.SetEnabled(false);
+                action.tooltip = "Collect rent or choose a more affordable opportunity first.";
+            }
+            sheet.Add(action);
             return sheet;
         }
 
@@ -285,9 +293,10 @@ namespace DistrictEmpire.Presentation
             if (!property.IsOwned) { BuyFromMarket(property); return; }
             if (property.Stage == PropertyStage.Occupied && game.State.RentReady > 0)
             {
+                var collected = game.State.RentReady;
                 game.CollectRent();
                 Render();
-                ShowCelebration("RENT COLLECTED", "+25 XP · +1 influence", property.TenantName + " paid today.");
+                ShowCelebration("RENT COLLECTED", "+" + Money(collected), property.TenantName + " paid today. +25 XP · +1 influence");
                 return;
             }
             if (property.Condition < 90)
@@ -507,7 +516,12 @@ namespace DistrictEmpire.Presentation
 
         private void UpgradeCompanySkill(string skillId)
         {
-            if (game.UpgradeCompanySkill(skillId)) { Render(); ShowCelebration("COMPANY UPGRADED", "+" + skillId, "Your company can now grow more efficiently."); }
+            if (game.UpgradeCompanySkill(skillId))
+            {
+                var level = skillId == "landlord" ? game.State.LandlordSkill : game.State.LawyerSkill;
+                Render();
+                ShowCelebration(skillId == "landlord" ? "LANDLORD TRAINED" : "LAWYER HIRED", skillId == "landlord" ? "Global rent +" + level + "%" : "Future paperwork -" + level * 2 + "m", "Your company level and influence updated.");
+            }
             else ShowToast("You need more influence or this skill is fully trained.");
         }
 
@@ -597,7 +611,7 @@ namespace DistrictEmpire.Presentation
         private void ShowCelebration(string title, string rewards, string message)
         {
             var overlay = new VisualElement(); overlay.AddToClassList("celebration-overlay");
-            var card = UiKit.Card("income"); card.AddToClassList("celebration-card"); card.Add(UiKit.Text(title, 11, true, UiKit.Green)); card.Add(UiKit.Text("+" + Money(620), 27, true)); card.Add(UiKit.Text(rewards, 13, true, UiKit.Green)); card.Add(UiKit.Text(message, 12, false, UiKit.Muted));
+            var card = UiKit.Card("income"); card.AddToClassList("celebration-card"); card.Add(UiKit.Text(title, 11, true, UiKit.Green)); card.Add(UiKit.Text(rewards, 23, true)); card.Add(UiKit.Text(message, 12, false, UiKit.Muted));
             card.Add(UiKit.Button("Continue", () => root.Remove(overlay), "income")); overlay.Add(card); root.Add(overlay);
         }
 
