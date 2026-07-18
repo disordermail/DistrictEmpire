@@ -61,6 +61,9 @@
 .toast { position: absolute; left: 18px; right: 18px; bottom: 82px; padding: 12px 14px; background-color: #172b4d; color: #ffffff; border-radius: 8px; }
 .section-heading { margin-left: 3px; margin-top: 2px; margin-bottom: 9px; }
 .briefing-card { padding: 14px; }
+.today-hero { padding: 17px; border-left-width: 6px; }
+.continue-card { padding: 16px; border-width: 2px; }
+.map-bottom-sheet { position: absolute; left: 12px; right: 12px; bottom: 76px; z-index: 10; padding: 16px; border-width: 2px; box-shadow: 0 8px 22px rgba(21, 33, 45, 0.22); }
 .briefing-metrics { flex-direction: row; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
 .briefing-metric { width: 48%; min-height: 52px; padding: 8px; background-color: #ffffff; border-radius: 7px; border-width: 1px; border-color: #dce4ea; }
 .metric-income { background-color: #e5f6ef; border-color: #9bd9c2; }
