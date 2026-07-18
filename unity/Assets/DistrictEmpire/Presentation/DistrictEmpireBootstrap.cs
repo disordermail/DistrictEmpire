@@ -144,7 +144,8 @@ namespace DistrictEmpire.Presentation
             continueCard.Add(UiKit.Text("CONTINUE MANAGING", 10, true, UiKit.Muted));
             continueCard.Add(UiKit.Text(hint.Title, 18, true));
             continueCard.Add(UiKit.Text(hint.Detail, 12, false, UiKit.Muted));
-            continueCard.Add(UiKit.Button(hint.Action, ContinueManaging, "primary")); content.Add(continueCard);
+            var continueAction = UiKit.Button(MainFlowLabel(hint), ContinueManaging, "primary");
+            continueAction.AddToClassList("primary-flow-action"); continueCard.Add(continueAction); content.Add(continueCard);
 
             var rent = UiKit.Card(game.State.RentReady > 0 ? "income" : "neutral"); rent.AddToClassList("rent-card");
             var copy = new VisualElement(); copy.AddToClassList("rent-copy");
@@ -268,7 +269,8 @@ namespace DistrictEmpire.Presentation
             var share = property.BuildingTotalUnits == 0 ? 0 : property.BuildingOwnedUnits * 100 / property.BuildingTotalUnits;
             sheet.Add(UiKit.Text("Building share " + property.BuildingOwnedUnits + "/" + property.BuildingTotalUnits + " · " + share + "% controlled", 11, true, UiKit.Blue));
             var affordable = property.IsOwned || game.State.Cash >= property.Price;
-            var action = UiKit.Button(affordable ? MapActionLabel(property) : "Need " + Money(property.Price - game.State.Cash), () => RunMapAction(property), affordable ? "primary" : "locked");
+            var action = UiKit.Button(affordable ? MapFlowLabel(property) : "Need " + Money(property.Price - game.State.Cash), () => RunMapAction(property), affordable ? "primary" : "locked");
+            action.AddToClassList("map-primary-action");
             if (!affordable)
             {
                 action.SetEnabled(false);
@@ -316,6 +318,21 @@ namespace DistrictEmpire.Presentation
             if (property.Condition < 90) return "Repair now";
             if (property.Stage == PropertyStage.Occupied && game.State.RentReady > 0) return "Collect rent";
             return PropertyActionLabel(property);
+        }
+
+        private string MainFlowLabel(GameHint hint)
+        {
+            if (hint.Action == "Collect rent") return "Collect " + Money(game.State.RentReady);
+            if (hint.Action == "Repair now") return "Repair leak - 450 PLN";
+            return hint.Action;
+        }
+
+        private string MapFlowLabel(Property property)
+        {
+            if (!property.IsOwned) return "Place bid - " + Money(property.Price);
+            if (property.Condition < 90) return "Repair leak - 450 PLN";
+            if (property.Stage == PropertyStage.Occupied && game.State.RentReady > 0) return "Collect " + Money(game.State.RentReady);
+            return MapActionLabel(property);
         }
 
         private void RenderAuctions()

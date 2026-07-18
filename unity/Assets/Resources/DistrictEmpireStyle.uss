@@ -22,8 +22,8 @@
 .de-text-amount { color: #046c4c; font-size: 25px; -unity-font-style: bold; }
 .de-text-muted { color: #596a79; font-size: 12px; }
 .de-button { min-height: 44px; margin-top: 10px; border-radius: 9px; -unity-font-style: bold; }
-.de-button-primary { background-color: #245ec7; color: #ffffff; min-height: 52px; border-radius: 12px; }
-.de-button-income { background-color: #07875f; color: #ffffff; min-height: 52px; border-radius: 12px; }
+.de-button-primary { background-color: #245ec7; color: #ffffff; min-height: 58px; border-radius: 12px; border-width: 2px; border-color: #17499e; font-size: 15px; }
+.de-button-income { background-color: #07875f; color: #ffffff; min-height: 58px; border-radius: 12px; border-width: 2px; border-color: #046c4c; font-size: 15px; }
 .de-button-secondary { background-color: #ffffff; color: #1b4faf; border-width: 1px; border-color: #d9e1e8; }
 .de-button-waiting { background-color: #b66709; color: #ffffff; min-height: 52px; border-radius: 10px; }
 .de-button-danger { background-color: #c93f55; color: #ffffff; min-height: 52px; border-radius: 10px; }
@@ -62,8 +62,10 @@
 .section-heading { margin-left: 3px; margin-top: 2px; margin-bottom: 9px; }
 .briefing-card { padding: 14px; }
 .today-hero { padding: 17px; border-left-width: 6px; }
-.continue-card { padding: 16px; border-width: 2px; }
+.continue-card { padding: 16px; border-width: 2px; border-color: #245ec7; }
+.primary-flow-action { min-height: 66px; margin-top: 14px; font-size: 17px; }
 .map-bottom-sheet { position: absolute; left: 12px; right: 12px; bottom: 76px; z-index: 10; padding: 16px; border-width: 2px; box-shadow: 0 8px 22px rgba(21, 33, 45, 0.22); }
+.map-primary-action { min-height: 62px; margin-top: 14px; font-size: 16px; }
 .briefing-metrics { flex-direction: row; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
 .briefing-metric { width: 48%; min-height: 52px; padding: 8px; background-color: #ffffff; border-radius: 7px; border-width: 1px; border-color: #dce4ea; }
 .metric-income { background-color: #e5f6ef; border-color: #9bd9c2; }
