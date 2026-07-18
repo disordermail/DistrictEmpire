@@ -138,12 +138,13 @@ namespace DistrictEmpire.Presentation
             metrics.Add(Metric("Next action", ImportantActionCount().ToString(), ImportantActionCount() > 0 ? "attention" : "neutral"));
             desk.Add(metrics); content.Add(desk);
 
-            var next = NextImportantProperty();
+            var hint = game.GetNextHint();
+            var next = game.State.Properties.FirstOrDefault(property => property.Id == hint.PropertyId);
             var continueCard = UiKit.Card(next == null ? "neutral" : ToneFor(next)); continueCard.AddToClassList("continue-card");
             continueCard.Add(UiKit.Text("CONTINUE MANAGING", 10, true, UiKit.Muted));
-            continueCard.Add(UiKit.Text(next == null ? "Your city is ready for expansion" : NextStory(next), 18, true));
-            continueCard.Add(UiKit.Text(next == null ? "Visit City to find your next opportunity." : PropertyDescription(next), 12, false, UiKit.Muted));
-            continueCard.Add(UiKit.Button(next == null ? "Explore City" : MapActionLabel(next), ContinueManaging, "primary")); content.Add(continueCard);
+            continueCard.Add(UiKit.Text(hint.Title, 18, true));
+            continueCard.Add(UiKit.Text(hint.Detail, 12, false, UiKit.Muted));
+            continueCard.Add(UiKit.Button(hint.Action, ContinueManaging, "primary")); content.Add(continueCard);
 
             var rent = UiKit.Card(game.State.RentReady > 0 ? "income" : "neutral"); rent.AddToClassList("rent-card");
             var copy = new VisualElement(); copy.AddToClassList("rent-copy");
@@ -262,14 +263,17 @@ namespace DistrictEmpire.Presentation
             var name = new VisualElement(); name.Add(UiKit.Text(property.Name, 19, true)); name.Add(UiKit.Text(property.District + " · " + Status(property), 11, true, StatusColor(property))); top.Add(name);
             top.Add(UiKit.Button("×", () => { mapSheetOpen = false; Render(); }, "icon")); sheet.Add(top);
             sheet.Add(UiKit.Text(NextStory(property), 13, false, UiKit.Muted));
-            sheet.Add(UiKit.Text(property.Stage == PropertyStage.Occupied ? "Income " + Money(property.TenantDailyRent) + " / day" : "Potential " + Money(property.BaseDailyRent) + " / day", 13, true, UiKit.Green));
+            sheet.Add(UiKit.Text(property.Stage == PropertyStage.Occupied ? "Income " + Money(game.EffectiveDailyRent(property)) + " / day" : "Potential " + Money(property.BaseDailyRent) + " / day", 13, true, UiKit.Green));
+            var share = property.BuildingTotalUnits == 0 ? 0 : property.BuildingOwnedUnits * 100 / property.BuildingTotalUnits;
+            sheet.Add(UiKit.Text("Building share " + property.BuildingOwnedUnits + "/" + property.BuildingTotalUnits + " · " + share + "% controlled", 11, true, UiKit.Blue));
             sheet.Add(UiKit.Button(MapActionLabel(property), () => RunMapAction(property), "primary"));
             return sheet;
         }
 
         private void ContinueManaging()
         {
-            var next = NextImportantProperty();
+            var hint = game.GetNextHint();
+            var next = game.State.Properties.FirstOrDefault(property => property.Id == hint.PropertyId);
             screen = "City";
             mapSheetOpen = next != null;
             if (next != null) selectedPropertyId = next.Id;
@@ -457,7 +461,7 @@ namespace DistrictEmpire.Presentation
         private VisualElement PropertyFacts(Property property)
         {
             var facts = new VisualElement(); facts.AddToClassList("property-facts");
-            facts.Add(Fact("LEVEL", property.Level.ToString())); facts.Add(Fact("VALUE", Money(property.Price))); facts.Add(Fact("RENT/DAY", Money(property.IsOwned && property.TenantDailyRent > 0 ? property.TenantDailyRent : property.BaseDailyRent))); facts.Add(Fact("CONDITION", property.Condition + "%")); return facts;
+            facts.Add(Fact("LEVEL", property.Level.ToString())); facts.Add(Fact("VALUE", Money(property.Price))); facts.Add(Fact("RENT/DAY", Money(property.IsOwned && property.TenantDailyRent > 0 ? game.EffectiveDailyRent(property) : property.BaseDailyRent))); facts.Add(Fact("CONDITION", property.Condition + "%")); return facts;
         }
 
         private VisualElement BuildingCollectionCard(Property property)
@@ -489,10 +493,22 @@ namespace DistrictEmpire.Presentation
             metrics.Add(Metric("Commercial", game.State.Properties.Count(property => property.IsOwned && property.Use == PropertyUse.Business).ToString(), "neutral"));
             metrics.Add(Metric("Buildings", game.State.Properties.Count(property => property.IsOwned).ToString(), "neutral"));
             metrics.Add(Metric("Rating", "★★★☆☆", "neutral")); card.Add(metrics); content.Add(card);
-            foreach (var item in new[] { "Finances", "Employees", "Lawyers & agents", "Skills" })
+            var landlordCost = 6 + game.State.LandlordSkill * 4;
+            var landlord = UiKit.Card("income"); landlord.Add(UiKit.Text("LANDLORD", 10, true, UiKit.Green)); landlord.Add(UiKit.Text("Global rent +" + game.State.LandlordSkill + "%", 17, true)); landlord.Add(UiKit.Text("Every level raises rent from all occupied properties.", 12, false, UiKit.Muted));
+            if (game.State.LandlordSkill < 5) landlord.Add(UiKit.Button("Train · " + landlordCost + " influence", () => UpgradeCompanySkill("landlord"), "income")); content.Add(landlord);
+            var lawyerCost = 6 + game.State.LawyerSkill * 4;
+            var lawyer = UiKit.Card("waiting"); lawyer.Add(UiKit.Text("LAWYER", 10, true, UiKit.Amber)); lawyer.Add(UiKit.Text("Paperwork " + (game.State.LawyerSkill == 0 ? "standard" : "-" + game.State.LawyerSkill * 2 + "m"), 17, true)); lawyer.Add(UiKit.Text("Each level shortens future property transfers by 2 minutes.", 12, false, UiKit.Muted));
+            if (game.State.LawyerSkill < 5) lawyer.Add(UiKit.Button("Hire · " + lawyerCost + " influence", () => UpgradeCompanySkill("lawyer"), "waiting")); content.Add(lawyer);
+            foreach (var item in new[] { "Finances", "Employees", "Agents" })
             {
                 var row = UiKit.Card(); row.Add(UiKit.Text(item, 16, true)); row.Add(UiKit.Text(item == "Finances" ? "Income and expenses across your Warsaw empire." : "Build your organization as your company reaches higher levels.", 12, false, UiKit.Muted)); content.Add(row);
             }
+        }
+
+        private void UpgradeCompanySkill(string skillId)
+        {
+            if (game.UpgradeCompanySkill(skillId)) { Render(); ShowCelebration("COMPANY UPGRADED", "+" + skillId, "Your company can now grow more efficiently."); }
+            else ShowToast("You need more influence or this skill is fully trained.");
         }
 
         private void RenderShop()
@@ -643,9 +659,9 @@ namespace DistrictEmpire.Presentation
             var card = UiKit.Card("neutral"); card.AddToClassList("empty-card"); card.Add(UiKit.Text(title, 18, true)); card.Add(UiKit.Text(description, 12, false, UiKit.Muted)); return card;
         }
 
-        private int OccupiedRent() => game.State.Properties.Where(p => p.IsOwned && p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent);
-        private int ResidentialRent() => game.State.Properties.Where(p => p.IsOwned && p.Use == PropertyUse.Residential && p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent);
-        private int BusinessRent() => game.State.Properties.Where(p => p.IsOwned && p.Use == PropertyUse.Business && p.Stage == PropertyStage.Occupied).Sum(p => p.TenantDailyRent);
+        private int OccupiedRent() => game.State.Properties.Where(p => p.IsOwned && p.Stage == PropertyStage.Occupied).Sum(game.EffectiveDailyRent);
+        private int ResidentialRent() => game.State.Properties.Where(p => p.IsOwned && p.Use == PropertyUse.Residential && p.Stage == PropertyStage.Occupied).Sum(game.EffectiveDailyRent);
+        private int BusinessRent() => game.State.Properties.Where(p => p.IsOwned && p.Use == PropertyUse.Business && p.Stage == PropertyStage.Occupied).Sum(game.EffectiveDailyRent);
         private int TaskCount() => game.State.Properties.Count(p => p.IsOwned && p.Condition < 90);
         private int ImportantActionCount() => (game.State.RentReady > 0 ? 1 : 0) + game.State.Properties.Count(property => property.IsOwned && (property.Condition < 90 || property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse));
         private Property NextImportantProperty()

@@ -133,6 +133,23 @@ namespace DistrictEmpire.Tests
             Assert.IsFalse(service.NegotiateApplicant(studio.Id, applicant.Id));
         }
 
+        [Test]
+        public void HintSystemAndCompanySkills_ChangeTheNextDecisionAndEconomy()
+        {
+            var service = NewService();
+            var hint = service.GetNextHint();
+            Assert.AreEqual("old-town", hint.PropertyId);
+            Assert.AreEqual("Collect rent", hint.Action);
+            Assert.IsTrue(service.UpgradeCompanySkill("landlord"));
+            Assert.AreEqual(1, service.State.LandlordSkill);
+            Assert.Greater(service.EffectiveDailyRent(service.State.Properties.Find(property => property.Id == "old-town")), 620);
+            Assert.IsTrue(service.UpgradeCompanySkill("lawyer"));
+            Assert.AreEqual(1, service.State.LawyerSkill);
+            var studio = service.State.Properties.Find(property => property.Id == "riverside");
+            Assert.IsTrue(service.Buy(studio.Id));
+            Assert.Less(DateTime.UtcNow.AddTicks(10).Ticks, studio.NotaryCompleteAtUtcTicks);
+        }
+
         private static GameService NewService()
         {
             return new GameService(new MemoryRepository(), new GameClock());

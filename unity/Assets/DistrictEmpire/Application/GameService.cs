@@ -5,6 +5,14 @@ using DistrictEmpire.Domain;
 
 namespace DistrictEmpire.Application
 {
+    public sealed class GameHint
+    {
+        public string Title;
+        public string Detail;
+        public string Action;
+        public string PropertyId;
+    }
+
     public sealed class GameService
     {
         private readonly IGameRepository repository;
@@ -129,7 +137,7 @@ namespace DistrictEmpire.Application
             property.IsOwned = true;
             property.BuildingOwnedUnits = Math.Max(1, property.BuildingOwnedUnits);
             property.Stage = PropertyStage.Notary;
-            property.NotaryCompleteAtUtcTicks = DateTime.UtcNow.AddSeconds(12).Ticks;
+            property.NotaryCompleteAtUtcTicks = DateTime.UtcNow.AddSeconds(Math.Max(4, 12 - State.LawyerSkill * 2)).Ticks;
             UpdateGoals();
             repository.Save(State);
             return true;
@@ -280,6 +288,43 @@ namespace DistrictEmpire.Application
             UpdateCompanyLevel();
             repository.Save(State);
             return true;
+        }
+
+        public bool UpgradeCompanySkill(string skillId)
+        {
+            var current = skillId == "landlord" ? State.LandlordSkill : skillId == "lawyer" ? State.LawyerSkill : -1;
+            var cost = 6 + Math.Max(0, current) * 4;
+            if (current < 0 || current >= 5 || State.Influence < cost) return false;
+            State.Influence -= cost;
+            if (skillId == "landlord") State.LandlordSkill++;
+            else State.LawyerSkill++;
+            State.Xp += 10;
+            UpdateCompanyLevel();
+            repository.Save(State);
+            return true;
+        }
+
+        public int EffectiveDailyRent(Property property) => property == null ? 0 : property.TenantDailyRent * (100 + State.LandlordSkill) / 100;
+
+        public GameHint GetNextHint()
+        {
+            var owned = State.Properties.Where(property => property.IsOwned).ToList();
+            var rentProperty = owned.FirstOrDefault(property => property.Stage == PropertyStage.Occupied);
+            if (State.RentReady > 0 && rentProperty != null)
+                return new GameHint { Title = rentProperty.TenantName + " paid rent", Detail = "Collect " + State.RentReady.ToString("N0") + " PLN and reinvest it in Warsaw.", Action = "Collect rent", PropertyId = rentProperty.Id };
+            var repair = owned.FirstOrDefault(property => property.Condition < 90);
+            if (repair != null)
+                return new GameHint { Title = repair.TenantName + " needs help", Detail = repair.Name + " needs maintenance before the issue gets worse.", Action = "Repair now", PropertyId = repair.Id };
+            var applicants = owned.FirstOrDefault(property => property.Stage == PropertyStage.Applications);
+            if (applicants != null)
+                return new GameHint { Title = applicants.Applicants.FirstOrDefault()?.Name + " wants to move in", Detail = applicants.Name + " is ready to start earning.", Action = "Choose tenant", PropertyId = applicants.Id };
+            var choosingUse = owned.FirstOrDefault(property => property.Stage == PropertyStage.ChoosingUse);
+            if (choosingUse != null)
+                return new GameHint { Title = "Keys arrived for " + choosingUse.Name, Detail = "Choose residential or business use before listing it.", Action = "Choose use", PropertyId = choosingUse.Id };
+            var available = State.Properties.FirstOrDefault(property => !property.IsOwned && property.Price <= State.Cash);
+            if (available != null)
+                return new GameHint { Title = available.Name + " is within reach", Detail = "A new share in " + available.BuildingName + " grows your empire.", Action = "Explore opportunity", PropertyId = available.Id };
+            return new GameHint { Title = "Your city is stable", Detail = "Check the map for the next building worth watching.", Action = "Explore city" };
         }
 
         public string Countdown(Property property) => clock.Countdown(property.Stage == PropertyStage.Notary ? property.NotaryCompleteAtUtcTicks : property.Stage == PropertyStage.CancellingContract ? property.ContractEndAtUtcTicks : property.ListingAvailableAtUtcTicks, DateTime.UtcNow);

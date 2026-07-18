@@ -17,7 +17,7 @@ namespace DistrictEmpire.Application
                 state.Day += days;
                 foreach (var property in state.Properties)
                     if (property.IsOwned && property.Stage == PropertyStage.Occupied)
-                        state.RentReady += property.TenantDailyRent * days;
+                        state.RentReady += property.TenantDailyRent * (100 + state.LandlordSkill) / 100 * days;
             }
             state.LastClockUtcTicks = utcNow.Ticks;
         }

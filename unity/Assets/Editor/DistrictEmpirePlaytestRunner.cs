@@ -15,6 +15,11 @@ namespace DistrictEmpire.Editor
             var starter = RequireProperty(service, "old-town");
             Require(starter.Stage == PropertyStage.Occupied, "Starter property is not occupied.");
             Require(!string.IsNullOrEmpty(starter.TenantStory), "Starter tenant story is missing.");
+            var firstHint = service.GetNextHint();
+            Require(firstHint.PropertyId == starter.Id && firstHint.Action == "Collect rent", "The next-action hint did not lead to ready rent.");
+            Require(service.UpgradeCompanySkill("landlord"), "Landlord company skill failed.");
+            Require(service.EffectiveDailyRent(starter) > starter.TenantDailyRent, "Landlord skill did not improve rent.");
+            Require(service.UpgradeCompanySkill("lawyer"), "Lawyer company skill failed.");
             Require(service.CollectRent(), "Rent collection failed.");
             Require(service.State.RentReady == 0, "Collected rent remained in the wallet.");
             Require(service.ClaimDailyReward(), "Daily reward claim failed.");
@@ -37,6 +42,7 @@ namespace DistrictEmpire.Editor
             var studio = RequireProperty(service, "riverside");
             Require(service.Buy(studio.Id), "Purchase action failed.");
             Require(studio.Stage == PropertyStage.Notary, "Purchase did not start notary transfer.");
+            Require(studio.NotaryCompleteAtUtcTicks < DateTime.UtcNow.AddSeconds(12).Ticks, "Lawyer skill did not shorten new paperwork.");
             Require(service.SpeedUpNotary(studio.Id), "Notary speed-up action failed.");
             Require(studio.Stage == PropertyStage.ChoosingUse, "Notary speed-up did not complete the transfer.");
             service.ChooseUse(studio.Id, PropertyUse.Business);
