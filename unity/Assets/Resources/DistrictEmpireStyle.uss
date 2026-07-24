@@ -69,6 +69,10 @@
 .map-bottom-sheet { position: absolute; left: 12px; right: 12px; bottom: 76px; z-index: 10; padding: 16px; border-width: 2px; box-shadow: 0 8px 22px rgba(21, 33, 45, 0.22); }
 .map-primary-action { min-height: 62px; margin-top: 14px; font-size: 16px; }
 .action-hint { margin-top: 11px; padding: 9px 10px; background-color: #edf4ff; border-left-width: 3px; border-left-color: #245ec7; border-radius: 6px; }
+.action-card-working { border-color: #245ec7; border-width: 3px; }
+.action-card-done { background-color: #d8f4e7; border-color: #07875f; }
+.action-sparks { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.action-spark { position: absolute; width: 9px; height: 9px; background-color: #ffb21c; border-radius: 6px; }
 .briefing-metrics { flex-direction: row; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
 .briefing-metric { width: 48%; min-height: 52px; padding: 8px; background-color: #ffffff; border-radius: 7px; border-width: 1px; border-color: #dce4ea; }
 .metric-income { background-color: #e5f6ef; border-color: #9bd9c2; }
