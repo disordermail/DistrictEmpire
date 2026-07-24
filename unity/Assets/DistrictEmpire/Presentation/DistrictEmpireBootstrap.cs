@@ -70,12 +70,18 @@ namespace DistrictEmpire.Presentation
         {
             var header = new VisualElement();
             header.AddToClassList("top-header");
+            header.style.flexShrink = 0;
             var row = UiKit.Row("header-row");
+            row.style.minHeight = 64;
             var title = new VisualElement();
+            title.AddToClassList("header-title");
+            title.style.flexGrow = 1;
+            title.style.flexShrink = 1;
             title.Add(UiKit.Text("WARSZAWA · OFFLINE MVP", 11, true, UiKit.Muted));
             title.Add(UiKit.Text("District Empire", 25, true));
             row.Add(title);
             var controls = UiKit.Row("header-controls");
+            controls.style.flexShrink = 0;
             var level = new VisualElement(); level.AddToClassList("level-pill");
             level.Add(UiKit.Text("LVL", 9, true, UiKit.Muted));
             level.Add(UiKit.Text(game.State.CompanyLevel.ToString(), 18, true, UiKit.Amber));
@@ -83,7 +89,7 @@ namespace DistrictEmpire.Presentation
             var menu = UiKit.Button("☰", ShowMenu, "icon"); menu.tooltip = "Company headquarters"; controls.Add(menu);
             row.Add(controls);
             header.Add(row);
-            var wallet = new VisualElement(); wallet.AddToClassList("wallet-strip");
+            var wallet = new VisualElement(); wallet.AddToClassList("wallet-strip"); wallet.style.flexShrink = 0;
             wallet.Add(WalletChip("Cash", Money(game.State.Cash)));
             wallet.Add(WalletChip("Rent/day", Money(OccupiedRent())));
             wallet.Add(WalletChip("Buildings", game.State.Properties.Count(p => p.IsOwned).ToString()));
@@ -253,6 +259,12 @@ namespace DistrictEmpire.Presentation
             content.Add(SectionHeading("NEARBY PROPERTIES", "Walk the district before you invest"));
             foreach (var property in game.State.Properties.Where(property => !property.IsOwned).OrderBy(property => property.Price).Take(3))
                 content.Add(NearbyPropertyCard(property));
+            var openStreetMap = UiKit.Card("neutral"); openStreetMap.AddToClassList("map-source-card");
+            openStreetMap.Add(UiKit.Text("MAP DATA", 10, true, UiKit.Muted));
+            openStreetMap.Add(UiKit.Text("OpenStreetMap · Warsaw", 16, true));
+            openStreetMap.Add(UiKit.Text("Open the real city map to explore streets and landmarks behind this prototype.", 11, false, UiKit.Muted));
+            openStreetMap.Add(UiKit.Button("Open Warsaw map", () => UnityEngine.Application.OpenURL("https://www.openstreetmap.org/#map=13/52.2297/21.0122"), "secondary"));
+            openStreetMap.Add(UiKit.Text("© OpenStreetMap contributors", 10, false, UiKit.Muted)); content.Add(openStreetMap);
             var npc = UiKit.Card("briefing"); npc.AddToClassList("npc-card"); npc.Add(UiKit.Text("NEARBY INVESTOR ACTIVITY", 10, true, UiKit.Muted));
             foreach (var item in game.State.NpcActivities) { npc.Add(UiKit.Text(item.Investor + " " + item.Title, 13, true)); npc.Add(UiKit.Text(item.Detail, 11, false, UiKit.Muted)); }
             content.Add(npc);

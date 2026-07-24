@@ -1,6 +1,7 @@
 .app-shell { background-color: #e8eff5; color: #101b28; }
-.top-header { background-color: #ffffff; padding-left: 18px; padding-right: 18px; padding-top: 18px; padding-bottom: 12px; border-bottom-width: 1px; border-bottom-color: #dce4ea; }
-.header-row { flex-direction: row; justify-content: space-between; align-items: center; }
+.top-header { flex-shrink: 0; background-color: #ffffff; padding-left: 18px; padding-right: 18px; padding-top: 16px; padding-bottom: 12px; border-bottom-width: 1px; border-bottom-color: #dce4ea; }
+.header-row { min-height: 64px; flex-direction: row; justify-content: space-between; align-items: center; }
+.header-title { flex-grow: 1; min-width: 0; padding-top: 2px; }
 .eyebrow { color: #596a79; font-size: 11px; -unity-font-style: bold; }
 .screen-title { color: #15212d; font-size: 25px; -unity-font-style: bold; }
 .level-pill { min-width: 54px; min-height: 46px; background-color: #ffffff; border-width: 1px; border-color: #dce4ea; border-radius: 8px; justify-content: center; align-items: center; }
@@ -47,6 +48,7 @@
 .map-pin-owned { border-color: #245ec7; background-color: #eaf1ff; }
 .pin-tier { position: absolute; top: -9px; right: -9px; min-width: 22px; height: 22px; justify-content: center; align-items: center; background-color: #a97816; color: #ffffff; border-radius: 7px; border-width: 2px; border-color: #ffffff; }
 .map-legend { flex-direction: row; gap: 8px; align-items: center; }
+.map-source-card { padding: 13px; }
 .market-tabs { flex-direction: row; gap: 6px; margin-top: 8px; margin-bottom: 10px; }
 .property-hero { padding: 16px; }
 .property-facts { flex-direction: row; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
