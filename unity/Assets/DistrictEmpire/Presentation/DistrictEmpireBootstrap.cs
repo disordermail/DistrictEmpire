@@ -144,6 +144,7 @@ namespace DistrictEmpire.Presentation
             continueCard.Add(UiKit.Text("CONTINUE MANAGING", 10, true, UiKit.Muted));
             continueCard.Add(UiKit.Text(hint.Title, 18, true));
             continueCard.Add(UiKit.Text(hint.Detail, 12, false, UiKit.Muted));
+            continueCard.Add(ActionHint("Tap the button below to handle this now."));
             var continueAction = UiKit.Button(MainFlowLabel(hint), ContinueManaging, "primary");
             continueAction.AddToClassList("primary-flow-action"); continueCard.Add(continueAction); content.Add(continueCard);
 
@@ -269,6 +270,7 @@ namespace DistrictEmpire.Presentation
             var share = property.BuildingTotalUnits == 0 ? 0 : property.BuildingOwnedUnits * 100 / property.BuildingTotalUnits;
             sheet.Add(UiKit.Text("Building share " + property.BuildingOwnedUnits + "/" + property.BuildingTotalUnits + " · " + share + "% controlled", 11, true, UiKit.Blue));
             var affordable = property.IsOwned || game.State.Cash >= property.Price;
+            sheet.Add(ActionHint(affordable ? MapActionHint(property) : "This opportunity stays locked until you have enough cash."));
             var action = UiKit.Button(affordable ? MapFlowLabel(property) : "Need " + Money(property.Price - game.State.Cash), () => RunMapAction(property), affordable ? "primary" : "locked");
             action.AddToClassList("map-primary-action");
             if (!affordable)
@@ -333,6 +335,34 @@ namespace DistrictEmpire.Presentation
             if (property.Condition < 90) return "Repair leak - 450 PLN";
             if (property.Stage == PropertyStage.Occupied && game.State.RentReady > 0) return "Collect " + Money(game.State.RentReady);
             return MapActionLabel(property);
+        }
+
+        private static string MapActionHint(Property property)
+        {
+            if (!property.IsOwned) return "Tap to start the purchase. The notary timer begins immediately.";
+            if (property.Condition < 90) return "Tap to pay for maintenance and improve the condition straight away.";
+            if (property.Stage == PropertyStage.Occupied) return "Tap to move the ready rent into your cash balance.";
+            return "Tap to continue this property's next important step.";
+        }
+
+        private static string PropertyActionHint(Property property)
+        {
+            if (property.Stage == PropertyStage.Notary) return "Hint: use influence only when you want to skip the remaining paperwork time.";
+            if (property.Stage == PropertyStage.ChoosingUse) return "Hint: choose one use first. It decides which applicants will appear.";
+            if (property.Stage == PropertyStage.Available) return "Hint: publish a listing to start receiving tenant applications.";
+            if (property.Stage == PropertyStage.Listing) return "Hint: wait for applications. You can return to Today while the listing runs.";
+            if (property.Stage == PropertyStage.Applications) return "Hint: negotiate first if you want a higher rent, then accept one applicant.";
+            if (property.Condition < 90) return "Hint: maintain the property first to avoid leaving your tenant with an unresolved issue.";
+            if (property.Stage == PropertyStage.Occupied) return "Hint: rent is collected from Today whenever it becomes ready.";
+            return "Hint: follow the highlighted action to continue this property's story.";
+        }
+
+        private VisualElement ActionHint(string copy)
+        {
+            var hint = new VisualElement(); hint.AddToClassList("action-hint");
+            hint.Add(UiKit.Text("NEXT", 9, true, UiKit.Blue));
+            hint.Add(UiKit.Text(copy, 11, false, UiKit.Muted));
+            return hint;
         }
 
         private void RenderAuctions()
@@ -414,6 +444,7 @@ namespace DistrictEmpire.Presentation
             hero.Add(UiKit.Text(property.Icon, 13, true, UiKit.Blue)); hero.Add(UiKit.Text(property.Name, 23, true));
             hero.Add(UiKit.Text(Status(property), 13, true, StatusColor(property)));
             hero.Add(PropertyFacts(property)); content.Add(hero);
+            if (property.IsOwned) content.Add(ActionHint(PropertyActionHint(property)));
 
             if (!property.IsOwned)
             {
