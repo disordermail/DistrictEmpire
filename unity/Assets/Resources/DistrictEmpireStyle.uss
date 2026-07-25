@@ -15,6 +15,8 @@
 .screen-scroll { flex-grow: 1; padding-left: 14px; padding-right: 14px; padding-top: 14px; padding-bottom: 14px; background-color: #e8eff5; }
 .de-card { padding: 14px; margin-bottom: 10px; background-color: #ffffff; border-width: 1px; border-color: #c9d6e1; border-radius: 9px; }
 .de-card-income { background-color: #d8f4e7; border-color: #56b98a; border-left-width: 5px; }
+.de-card-collect { background-color: #fff1c9; border-color: #d18a08; border-left-width: 5px; }
+.de-card-repair { background-color: #ffe8d5; border-color: #d16718; border-left-width: 5px; }
 .de-card-waiting { background-color: #fff0ce; border-color: #e0a33a; border-left-width: 5px; }
 .de-card-attention { background-color: #ffe6df; border-color: #d8604b; border-left-width: 5px; }
 .de-card-briefing { background-color: #dce9ff; border-color: #6391df; border-left-width: 5px; }
@@ -25,6 +27,8 @@
 .de-button { min-height: 44px; margin-top: 10px; border-radius: 9px; -unity-font-style: bold; }
 .de-button-primary { background-color: #245ec7; color: #ffffff; min-height: 58px; border-radius: 12px; border-width: 2px; border-color: #17499e; font-size: 15px; }
 .de-button-income { background-color: #07875f; color: #ffffff; min-height: 58px; border-radius: 12px; border-width: 2px; border-color: #046c4c; font-size: 15px; }
+.de-button-collect { background-color: #c77e05; color: #ffffff; min-height: 58px; border-radius: 12px; border-width: 2px; border-color: #9e6100; font-size: 15px; }
+.de-button-repair { background-color: #d05210; color: #ffffff; min-height: 52px; border-radius: 10px; border-width: 2px; border-color: #a63e08; font-size: 15px; }
 .de-button-secondary { background-color: #ffffff; color: #1b4faf; border-width: 1px; border-color: #d9e1e8; }
 .de-button-waiting { background-color: #b66709; color: #ffffff; min-height: 52px; border-radius: 10px; }
 .de-button-danger { background-color: #c93f55; color: #ffffff; min-height: 52px; border-radius: 10px; }
@@ -109,4 +113,4 @@
 .celebration-card { width: 100%; max-width: 360px; padding: 22px; border-radius: 12px; }
 .auction-refresh-hint { align-self: flex-start; margin-top: 2px; margin-bottom: 8px; padding: 7px 10px; background-color: #eaf1ff; border-width: 1px; border-color: #8eb2ee; border-radius: 12px; }
 .market-card { border-left-width: 5px; border-left-color: #245ec7; }
-.rent-card { border-left-width: 5px; border-left-color: #07875f; }
+.rent-card { border-left-width: 5px; border-left-color: #d18a08; }

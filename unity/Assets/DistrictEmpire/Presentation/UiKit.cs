@@ -10,6 +10,8 @@ namespace DistrictEmpire.Presentation
         public static readonly StyleColor Blue = new(new UnityEngine.Color(0.14f, 0.37f, 0.78f));
         public static readonly StyleColor Green = new(new UnityEngine.Color(0.03f, 0.53f, 0.37f));
         public static readonly StyleColor Amber = new(new UnityEngine.Color(0.71f, 0.40f, 0.04f));
+        public static readonly StyleColor Gold = new(new UnityEngine.Color(0.78f, 0.49f, 0.03f));
+        public static readonly StyleColor Repair = new(new UnityEngine.Color(0.82f, 0.31f, 0.06f));
         public static readonly StyleColor Panel = new(UnityEngine.Color.white);
 
         public static VisualElement Card(string tone = "neutral")
@@ -22,7 +24,7 @@ namespace DistrictEmpire.Presentation
             card.style.paddingLeft = card.style.paddingRight = 14;
             card.style.borderTopLeftRadius = card.style.borderTopRightRadius = 10;
             card.style.borderBottomLeftRadius = card.style.borderBottomRightRadius = 10;
-            card.style.backgroundColor = tone == "income" ? new UnityEngine.Color(0.90f, 0.97f, 0.94f) : tone == "waiting" ? new UnityEngine.Color(1f, 0.95f, 0.85f) : tone == "attention" ? new UnityEngine.Color(1f, 0.94f, 0.90f) : UnityEngine.Color.white;
+            card.style.backgroundColor = tone == "income" ? new UnityEngine.Color(0.90f, 0.97f, 0.94f) : tone == "collect" ? new UnityEngine.Color(1f, 0.95f, 0.79f) : tone == "repair" ? new UnityEngine.Color(1f, 0.91f, 0.83f) : tone == "waiting" ? new UnityEngine.Color(1f, 0.95f, 0.85f) : tone == "attention" ? new UnityEngine.Color(1f, 0.94f, 0.90f) : UnityEngine.Color.white;
             return card;
         }
 
@@ -45,12 +47,12 @@ namespace DistrictEmpire.Presentation
             var button = new Button(action) { text = title };
             button.AddToClassList("de-button");
             button.AddToClassList($"de-button-{kind}");
-            button.style.minHeight = kind == "primary" || kind == "income" || kind == "danger" || kind == "waiting" ? 52 : 44;
+            button.style.minHeight = kind == "primary" || kind == "income" || kind == "collect" || kind == "repair" || kind == "danger" || kind == "waiting" ? 52 : 44;
             button.style.marginTop = 10;
             button.style.borderTopLeftRadius = button.style.borderTopRightRadius = 10;
             button.style.borderBottomLeftRadius = button.style.borderBottomRightRadius = 10;
             button.style.unityFontStyleAndWeight = UnityEngine.FontStyle.Bold;
-            button.style.backgroundColor = kind == "income" ? Green.value : kind == "danger" ? new UnityEngine.Color(0.77f, 0.25f, 0.33f) : kind == "waiting" ? new UnityEngine.Color(0.72f, 0.40f, 0.04f) : kind == "secondary" || kind == "tertiary" || kind == "locked" ? UnityEngine.Color.white : Blue.value;
+            button.style.backgroundColor = kind == "income" ? Green.value : kind == "collect" ? Gold.value : kind == "repair" ? Repair.value : kind == "danger" ? new UnityEngine.Color(0.77f, 0.25f, 0.33f) : kind == "waiting" ? new UnityEngine.Color(0.72f, 0.40f, 0.04f) : kind == "secondary" || kind == "tertiary" || kind == "locked" ? UnityEngine.Color.white : Blue.value;
             button.style.color = kind == "secondary" || kind == "tertiary" ? Blue : kind == "locked" ? Muted : new StyleColor(UnityEngine.Color.white);
             return button;
         }
