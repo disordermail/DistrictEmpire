@@ -84,6 +84,10 @@
 .rent-card { flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; border-width: 2px; }
 .rent-copy { flex-grow: 1; min-width: 0; }
 .rent-action { width: 118px; min-width: 118px; min-height: 44px; margin-top: 0; font-size: 12px; }
+.portfolio-property-row { padding-top: 12px; padding-bottom: 12px; margin-bottom: 7px; border-left-width: 4px; border-left-color: #245ec7; }
+.portfolio-property-row:hover { background-color: #eef4ff; border-color: #245ec7; }
+.portfolio-property-row:active { background-color: #e2ecff; }
+.portfolio-property-state { margin-left: 10px; padding: 5px 7px; background-color: #edf4ff; border-radius: 8px; }
 .card-top { flex-direction: row; justify-content: space-between; align-items: flex-start; }
 .tier-badge { padding: 5px 7px; background-color: #fff8e4; color: #a97816; border-radius: 10px; -unity-font-style: bold; }
 .property-bottom { flex-direction: row; justify-content: space-between; margin-top: 10px; padding-top: 9px; border-top-width: 1px; border-top-color: #dce4ea; }

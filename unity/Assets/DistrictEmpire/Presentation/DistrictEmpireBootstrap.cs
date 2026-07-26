@@ -144,8 +144,6 @@ namespace DistrictEmpire.Presentation
             metrics.Add(Metric("Next action", ImportantActionCount().ToString(), ImportantActionCount() > 0 ? "attention" : "neutral"));
             desk.Add(metrics); content.Add(desk);
 
-            var hint = game.GetNextHint();
-            var next = game.State.Properties.FirstOrDefault(property => property.Id == hint.PropertyId);
             var rent = UiKit.Card(game.State.RentReady > 0 ? "collect" : "neutral"); rent.AddToClassList("rent-card");
             var copy = new VisualElement(); copy.AddToClassList("rent-copy");
             copy.Add(UiKit.Text(game.State.RentReady > 0 ? "RENT READY TO COLLECT" : "NEXT RENT", 10, true, game.State.RentReady > 0 ? UiKit.Gold : UiKit.Muted));
@@ -166,14 +164,7 @@ namespace DistrictEmpire.Presentation
             }, game.State.RentReady > 0 ? "collect" : "secondary");
             collect.AddToClassList("rent-action"); rent.Add(collect); content.Add(rent);
 
-            var continueCard = UiKit.Card(next == null ? "neutral" : ToneFor(next)); continueCard.AddToClassList("continue-card");
-            continueCard.Add(UiKit.Text("PRIORITY PROPERTY", 10, true, UiKit.Muted));
-            continueCard.Add(UiKit.Text(hint.Title, 18, true));
-            continueCard.Add(UiKit.Text(hint.Detail, 12, false, UiKit.Muted));
-            continueCard.Add(ActionHint("Tap the button below to handle this now."));
-            var continueAction = UiKit.Button(next == null ? "Open Map" : "Open property", ContinueManaging, "primary");
-            continueAction.AddToClassList("primary-flow-action"); continueCard.Add(continueAction); content.Add(continueCard);
-            content.Add(SectionHeading("YOUR PROPERTIES", "Handle the important ones first"));
+            content.Add(SectionHeading("YOUR PROPERTIES", "Tap a property to manage it"));
             AddPropertyGroup("NEEDS ATTENTION", owned.Where(property => property.Condition < 90).ToList());
             AddPropertyGroup("NEEDS A DECISION", owned.Where(property => property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse).ToList());
             AddPropertyGroup("IN PROGRESS", owned.Where(property => property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing || property.Stage == PropertyStage.CancellingContract || property.Stage == PropertyStage.ForSale).ToList());
@@ -187,7 +178,7 @@ namespace DistrictEmpire.Presentation
         {
             if (properties.Count == 0) return;
             var heading = UiKit.Text(title + " · " + properties.Count, 10, true, UiKit.Muted); heading.AddToClassList("portfolio-group-title"); content.Add(heading);
-            foreach (var property in properties.OrderBy(StatusRank)) content.Add(PropertyCard(property, true));
+            foreach (var property in properties.OrderBy(StatusRank)) content.Add(PropertyCard(property));
         }
 
         private void RenderLivingBriefing(System.Collections.Generic.List<Property> owned)
@@ -495,8 +486,14 @@ namespace DistrictEmpire.Presentation
             var property = game.State.Properties.FirstOrDefault(p => p.Id == selectedPropertyId);
             if (property == null) { screen = "Portfolio"; Render(); return; }
             var hero = UiKit.Card(property.IsOwned ? "income" : "neutral"); hero.AddToClassList("property-hero");
-            hero.Add(UiKit.Text(property.District.ToUpperInvariant() + " · " + property.Category.ToUpperInvariant(), 10, true, UiKit.Muted));
-            hero.Add(UiKit.Text(property.Icon, 13, true, UiKit.Blue)); hero.Add(UiKit.Text(property.Name, 23, true));
+            var heroTop = UiKit.Row("card-top");
+            var identity = new VisualElement();
+            identity.Add(UiKit.Text(property.District.ToUpperInvariant() + " · " + property.Category.ToUpperInvariant(), 10, true, UiKit.Muted));
+            identity.Add(UiKit.Text(property.Icon, 13, true, UiKit.Blue));
+            identity.Add(UiKit.Text(property.Name, 23, true));
+            heroTop.Add(identity);
+            heroTop.Add(UiKit.Button("×", CloseProperty, "icon"));
+            hero.Add(heroTop);
             hero.Add(UiKit.Text(Status(property), 13, true, StatusColor(property)));
             hero.Add(PropertyFacts(property)); content.Add(hero);
             if (property.IsOwned) content.Add(ActionHint(PropertyActionHint(property)));
@@ -579,7 +576,13 @@ namespace DistrictEmpire.Presentation
                 var saleOption = UiKit.Card("attention"); saleOption.Add(UiKit.Text("SELL THIS PROPERTY", 10, true, UiKit.Muted)); saleOption.Add(UiKit.Text("Vacant properties can be put on the market.", 12, false, UiKit.Muted)); saleOption.Add(UiKit.Button("Put property on market", () => { if (game.ListForSale(property.Id)) { Render(); ShowToast("Property is now listed for sale."); } }, "danger")); content.Add(saleOption);
             }
             if (property.IsOwned) content.Add(BuildingCollectionCard(property));
-            content.Add(UiKit.Button("Back to Portfolio", () => { screen = "Portfolio"; Render(); }, "secondary"));
+        }
+
+        private void CloseProperty()
+        {
+            mapSheetOpen = false;
+            screen = "Portfolio";
+            Render();
         }
 
         private VisualElement PropertyFacts(Property property)
@@ -809,17 +812,23 @@ namespace DistrictEmpire.Presentation
             else ShowToast("You need 3 influence to promote this property.");
         }
 
-        private VisualElement PropertyCard(Property property, bool showAction)
+        private VisualElement PropertyCard(Property property)
         {
-            var tone = property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : "attention";
-            var card = UiKit.Card(tone); card.AddToClassList("property-card");
+            var card = UiKit.Card("neutral"); card.AddToClassList("portfolio-property-row");
+            card.RegisterCallback<ClickEvent>(_ => OpenPortfolioProperty(property.Id));
             var top = UiKit.Row("card-top");
-            var identity = new VisualElement(); identity.Add(UiKit.Text(property.Icon, 10, true, UiKit.Blue)); identity.Add(UiKit.Text(property.Name, 17, true)); identity.Add(UiKit.Text(property.District + " · " + property.Category, 11, false, UiKit.Muted)); top.Add(identity); top.Add(Badge("TIER " + property.Tier, "tier-badge")); card.Add(top);
-            var status = UiKit.Text(Status(property), 12, true, StatusColor(property)); status.AddToClassList("status-chip"); status.AddToClassList("status-" + StatusTone(property)); card.Add(status);
-            card.Add(UiKit.Text(PropertyDescription(property), 12, false, UiKit.Muted));
-            var bottom = UiKit.Row("property-bottom"); bottom.Add(UiKit.Text("Monthly " + Money((property.TenantDailyRent > 0 ? property.TenantDailyRent : property.BaseDailyRent) * 30), 11, true)); bottom.Add(UiKit.Text("Condition " + property.Condition + "%", 11, true)); card.Add(bottom);
-            if (showAction) card.Add(UiKit.Button(PropertyActionLabel(property), () => { selectedPropertyId = property.Id; screen = "Property"; Render(); }, property.Condition < 90 ? "repair" : property.Stage == PropertyStage.ForSale || property.Stage == PropertyStage.CancellingContract ? "danger" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? "waiting" : property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse ? "income" : "secondary"));
+            top.Add(UiKit.Text(property.Name, 16, true));
+            var state = UiKit.Text(PortfolioState(property), 10, true, StatusColor(property)); state.AddToClassList("portfolio-property-state"); top.Add(state); card.Add(top);
+            var dailyRent = property.Stage == PropertyStage.Occupied ? game.EffectiveDailyRent(property) : property.BaseDailyRent;
+            card.Add(UiKit.Text("Rent " + Money(dailyRent) + " / day · " + property.District + " · " + PortfolioState(property), 11, false, UiKit.Muted));
             return card;
+        }
+
+        private void OpenPortfolioProperty(string propertyId)
+        {
+            selectedPropertyId = propertyId;
+            screen = "Property";
+            Render();
         }
 
         private VisualElement Badge(string value, string className)
@@ -868,6 +877,7 @@ namespace DistrictEmpire.Presentation
         private static string Money(int value) => value.ToString("N0") + " PLN";
         private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.CancellingContract ? 1 : property.Condition < 90 ? 2 : 3;
         private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : property.Stage == PropertyStage.CancellingContract ? "Tenant is preparing to leave" : property.Stage == PropertyStage.ForSale ? "Sale offer is waiting" : "Choose a use and advertise to start earning";
+        private static string PortfolioState(Property property) => property.Stage == PropertyStage.Occupied ? property.Use == PropertyUse.Business ? "Business" : "Rented" : property.Stage == PropertyStage.Available ? "Empty" : property.Stage == PropertyStage.Notary ? "Notary" : property.Stage == PropertyStage.ChoosingUse ? "Choose use" : property.Stage == PropertyStage.Listing ? "Listing" : property.Stage == PropertyStage.Applications ? "Applicants" : property.Stage == PropertyStage.CancellingContract ? "Moving out" : property.Stage == PropertyStage.ForSale ? "For sale" : "Empty";
         private static string PropertyActionLabel(Property property) => property.Condition < 90 ? "! Repair pipe" : property.Stage == PropertyStage.Notary ? "> Sign documents" : property.Stage == PropertyStage.CancellingContract ? "> Check move-out" : property.Stage == PropertyStage.ForSale ? "$ Review sale offer" : property.Stage == PropertyStage.ChoosingUse ? "+ Choose property use" : property.Stage == PropertyStage.Listing ? "> Check listing progress" : property.Stage == PropertyStage.Applications ? "+ Choose tenant" : property.Stage == PropertyStage.Occupied ? "> View tenant" : "+ Publish listing";
         private static StyleColor StatusColor(Property property) => property.Stage == PropertyStage.Occupied ? UiKit.Green : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? UiKit.Amber : UiKit.Blue;
         private static string StatusTone(Property property) => property.Condition < 90 ? "problem" : property.Stage == PropertyStage.Occupied ? "income" : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing || property.Stage == PropertyStage.CancellingContract || property.Stage == PropertyStage.ForSale ? "waiting" : property.Stage == PropertyStage.Applications || property.Stage == PropertyStage.ChoosingUse ? "decision" : "managed";
