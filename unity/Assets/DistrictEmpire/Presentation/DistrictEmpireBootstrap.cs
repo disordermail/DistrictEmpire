@@ -817,7 +817,14 @@ namespace DistrictEmpire.Presentation
             var card = UiKit.Card("neutral"); card.AddToClassList("portfolio-property-row");
             card.RegisterCallback<ClickEvent>(_ => OpenPortfolioProperty(property.Id));
             var top = UiKit.Row("card-top");
-            top.Add(UiKit.Text(property.Name, 16, true));
+            var identity = UiKit.Row("portfolio-property-identity");
+            var icon = UiKit.Text(PortfolioIconGlyph(property), 20, true, property.Stage == PropertyStage.Occupied ? new StyleColor(Color.white) : UiKit.Blue);
+            icon.AddToClassList("portfolio-property-icon");
+            icon.AddToClassList(property.Use == PropertyUse.Business ? "portfolio-property-icon-business" : "portfolio-property-icon-home");
+            icon.AddToClassList(property.Stage == PropertyStage.Occupied ? "portfolio-property-icon-full" : "portfolio-property-icon-empty");
+            identity.Add(icon);
+            identity.Add(UiKit.Text(property.Name, 16, true));
+            top.Add(identity);
             var state = UiKit.Text(PortfolioState(property), 10, true, StatusColor(property)); state.AddToClassList("portfolio-property-state"); top.Add(state); card.Add(top);
             var dailyRent = property.Stage == PropertyStage.Occupied ? game.EffectiveDailyRent(property) : property.BaseDailyRent;
             card.Add(UiKit.Text("Rent " + Money(dailyRent) + " / day · " + property.District + " · " + PortfolioState(property), 11, false, UiKit.Muted));
@@ -877,6 +884,7 @@ namespace DistrictEmpire.Presentation
         private static string Money(int value) => value.ToString("N0") + " PLN";
         private static int StatusRank(Property property) => property.Stage == PropertyStage.Applications ? 0 : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.CancellingContract ? 1 : property.Condition < 90 ? 2 : 3;
         private static string PropertyDescription(Property property) => property.Stage == PropertyStage.Occupied ? "Occupied by " + property.TenantName + " · " + Money(property.TenantDailyRent) + " / day" : property.Stage == PropertyStage.Applications ? property.Applicants.Count + " applicants waiting for a decision" : property.Stage == PropertyStage.Notary ? "Notary transfer in progress" : property.Stage == PropertyStage.CancellingContract ? "Tenant is preparing to leave" : property.Stage == PropertyStage.ForSale ? "Sale offer is waiting" : "Choose a use and advertise to start earning";
+        private static string PortfolioIconGlyph(Property property) => property.Use == PropertyUse.Business ? "▦" : "⌂";
         private static string PortfolioState(Property property) => property.Stage == PropertyStage.Occupied ? property.Use == PropertyUse.Business ? "Business" : "Rented" : property.Stage == PropertyStage.Available ? "Empty" : property.Stage == PropertyStage.Notary ? "Notary" : property.Stage == PropertyStage.ChoosingUse ? "Choose use" : property.Stage == PropertyStage.Listing ? "Listing" : property.Stage == PropertyStage.Applications ? "Applicants" : property.Stage == PropertyStage.CancellingContract ? "Moving out" : property.Stage == PropertyStage.ForSale ? "For sale" : "Empty";
         private static string PropertyActionLabel(Property property) => property.Condition < 90 ? "! Repair pipe" : property.Stage == PropertyStage.Notary ? "> Sign documents" : property.Stage == PropertyStage.CancellingContract ? "> Check move-out" : property.Stage == PropertyStage.ForSale ? "$ Review sale offer" : property.Stage == PropertyStage.ChoosingUse ? "+ Choose property use" : property.Stage == PropertyStage.Listing ? "> Check listing progress" : property.Stage == PropertyStage.Applications ? "+ Choose tenant" : property.Stage == PropertyStage.Occupied ? "> View tenant" : "+ Publish listing";
         private static StyleColor StatusColor(Property property) => property.Stage == PropertyStage.Occupied ? UiKit.Green : property.Stage == PropertyStage.Notary || property.Stage == PropertyStage.Listing ? UiKit.Amber : UiKit.Blue;

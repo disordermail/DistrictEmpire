@@ -88,6 +88,11 @@
 .portfolio-property-row:hover { background-color: #eef4ff; border-color: #245ec7; }
 .portfolio-property-row:active { background-color: #e2ecff; }
 .portfolio-property-state { margin-left: 10px; padding: 5px 7px; background-color: #edf4ff; border-radius: 8px; }
+.portfolio-property-identity { flex-direction: row; align-items: center; min-width: 0; }
+.portfolio-property-icon { width: 32px; min-width: 32px; height: 32px; margin-right: 9px; justify-content: center; align-items: center; border-width: 2px; border-radius: 7px; }
+.portfolio-property-icon-empty { background-color: #ffffff; border-color: #245ec7; }
+.portfolio-property-icon-full { background-color: #07875f; border-color: #046c4c; }
+.portfolio-property-icon-business { border-radius: 5px; }
 .card-top { flex-direction: row; justify-content: space-between; align-items: flex-start; }
 .tier-badge { padding: 5px 7px; background-color: #fff8e4; color: #a97816; border-radius: 10px; -unity-font-style: bold; }
 .property-bottom { flex-direction: row; justify-content: space-between; margin-top: 10px; padding-top: 9px; border-top-width: 1px; border-top-color: #dce4ea; }
