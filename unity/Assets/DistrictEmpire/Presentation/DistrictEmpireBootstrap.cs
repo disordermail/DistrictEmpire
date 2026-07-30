@@ -22,10 +22,19 @@ namespace DistrictEmpire.Presentation
         private float auctionPullStartY;
         private bool auctionPullArmed;
         private int auctionRefreshCount;
+        private OpenStreetMapTileLayer mapTiles;
+        private string mapRegionId = "malopolska";
+        private static readonly MapRegion[] MapRegions =
+        {
+            new("malopolska", "Malopolska", 50.0614d, 19.9366d),
+            new("kujawsko-pomorskie", "Kujawsko-Pomorskie", 53.0138d, 18.5984d)
+        };
 
         private void Awake()
         {
             game = new GameService(new JsonLocalGameRepository(), new GameClock());
+            mapTiles = GetComponent<OpenStreetMapTileLayer>();
+            if (mapTiles == null) mapTiles = gameObject.AddComponent<OpenStreetMapTileLayer>();
             root = GetComponent<UIDocument>().rootVisualElement;
             var style = Resources.Load<StyleSheet>("DistrictEmpireStyle");
             if (style != null) root.styleSheets.Add(style);
@@ -77,7 +86,7 @@ namespace DistrictEmpire.Presentation
             title.AddToClassList("header-title");
             title.style.flexGrow = 1;
             title.style.flexShrink = 1;
-            title.Add(UiKit.Text("WARSZAWA · OFFLINE MVP", 11, true, UiKit.Muted));
+            title.Add(UiKit.Text("POLSKA · OFFLINE MVP", 11, true, UiKit.Muted));
             title.Add(UiKit.Text("District Empire", 25, true));
             row.Add(title);
             var controls = UiKit.Row("header-controls");
@@ -232,12 +241,23 @@ namespace DistrictEmpire.Presentation
 
         private void RenderMap()
         {
-            content.Add(SectionHeading("WARSAW INVESTMENT MAP", "What can I buy?"));
+            var region = CurrentMapRegion();
+            var regionalProperties = game.State.Properties.Where(property => property.MarketRegionId == region.Id).ToList();
+            content.Add(SectionHeading(region.Name.ToUpperInvariant() + " MARKET", "What can I buy?"));
             content.Add(UiKit.Text("Tap a building to inspect its price, rent potential and current ownership.", 12, false, UiKit.Muted));
+            var regions = new VisualElement(); regions.AddToClassList("map-region-tabs");
+            foreach (var candidate in MapRegions)
+            {
+                var button = UiKit.Button(candidate.Name, () => { mapRegionId = candidate.Id; mapSheetOpen = false; Render(); }, "filter");
+                if (candidate.Id == mapRegionId) button.AddToClassList("filter-active");
+                regions.Add(button);
+            }
+            content.Add(regions);
             var map = new VisualElement(); map.AddToClassList("map-stage");
+            mapTiles.Show(map, region);
             var live = game.State.NpcActivities.FirstOrDefault();
             var activity = UiKit.Text(live == null ? "Market activity is loading" : live.Investor + " " + live.Title, 10, true); activity.AddToClassList("map-activity"); map.Add(activity);
-            foreach (var property in game.State.Properties)
+            foreach (var property in regionalProperties)
             {
                 var pin = new Button(() => { selectedPropertyId = property.Id; OpenPropertyFromMap(property); });
                 pin.AddToClassList("map-pin");
@@ -252,13 +272,13 @@ namespace DistrictEmpire.Presentation
             var legend = UiKit.Card("neutral"); legend.AddToClassList("map-legend");
             legend.Add(UiKit.Text("YOUR BUILDINGS", 10, true, UiKit.Green)); legend.Add(UiKit.Text("Available properties are blue. Your assets are green.", 12, false, UiKit.Muted)); content.Add(legend);
             content.Add(SectionHeading("NEARBY PROPERTIES", "Walk the district before you invest"));
-            foreach (var property in game.State.Properties.Where(property => !property.IsOwned).OrderBy(property => property.Price).Take(3))
+            foreach (var property in regionalProperties.Where(property => !property.IsOwned).OrderBy(property => property.Price).Take(3))
                 content.Add(NearbyPropertyCard(property));
             var openStreetMap = UiKit.Card("neutral"); openStreetMap.AddToClassList("map-source-card");
             openStreetMap.Add(UiKit.Text("MAP DATA", 10, true, UiKit.Muted));
-            openStreetMap.Add(UiKit.Text("OpenStreetMap · Warsaw", 16, true));
-            openStreetMap.Add(UiKit.Text("Open the real city map to explore streets and landmarks behind this prototype.", 11, false, UiKit.Muted));
-            openStreetMap.Add(UiKit.Button("Open Warsaw map", () => UnityEngine.Application.OpenURL("https://www.openstreetmap.org/#map=13/52.2297/21.0122"), "secondary"));
+            openStreetMap.Add(UiKit.Text("OpenStreetMap · " + region.Name, 16, true));
+            openStreetMap.Add(UiKit.Text("Live map tiles are loaded only while this market is open.", 11, false, UiKit.Muted));
+            openStreetMap.Add(UiKit.Button("Open " + region.Name + " map", () => UnityEngine.Application.OpenURL(OpenStreetMapUrl(region)), "secondary"));
             openStreetMap.Add(UiKit.Text("© OpenStreetMap contributors", 10, false, UiKit.Muted)); content.Add(openStreetMap);
             var npc = UiKit.Card("briefing"); npc.AddToClassList("npc-card"); npc.Add(UiKit.Text("NEARBY INVESTOR ACTIVITY", 10, true, UiKit.Muted));
             foreach (var item in game.State.NpcActivities) { npc.Add(UiKit.Text(item.Investor + " " + item.Title, 13, true)); npc.Add(UiKit.Text(item.Detail, 11, false, UiKit.Muted)); }
@@ -271,6 +291,9 @@ namespace DistrictEmpire.Presentation
             mapSheetOpen = true;
             Render();
         }
+
+        private MapRegion CurrentMapRegion() => MapRegions.First(region => region.Id == mapRegionId);
+        private static string OpenStreetMapUrl(MapRegion region) => "https://www.openstreetmap.org/#map=9/" + region.Latitude.ToString("F4", System.Globalization.CultureInfo.InvariantCulture) + "/" + region.Longitude.ToString("F4", System.Globalization.CultureInfo.InvariantCulture);
 
         private VisualElement BuildMapSheet()
         {
@@ -403,7 +426,7 @@ namespace DistrictEmpire.Presentation
         private void RenderAuctions()
         {
             ConfigureAuctionPullToRefresh();
-            content.Add(SectionHeading("PROPERTY EXCHANGE", "Compare opportunities across Warsaw"));
+            content.Add(SectionHeading("PROPERTY EXCHANGE", "Compare opportunities across Poland"));
             var refresh = UiKit.Text(auctionRefreshCount == 0 ? "Pull down to refresh the exchange" : "Exchange refreshed just now", 11, true, UiKit.Blue); refresh.AddToClassList("auction-refresh-hint"); content.Add(refresh);
             var tabs = new VisualElement(); tabs.AddToClassList("market-tabs");
             foreach (var category in new[] { "Nearby", "City-wide", "Premium" })
@@ -413,7 +436,7 @@ namespace DistrictEmpire.Presentation
             }
             content.Add(tabs);
             AddExchangeGroup("NEARBY LISTINGS", "Properties around your current district", game.State.Properties.Where(property => !property.IsOwned && property.Tier == 1));
-            AddExchangeGroup("CITY-WIDE LISTINGS", "Properties further across Warsaw", game.State.Properties.Where(property => !property.IsOwned && property.Tier == 2));
+            AddExchangeGroup("CITY-WIDE LISTINGS", "Properties across both starter regions", game.State.Properties.Where(property => !property.IsOwned && property.Tier == 2));
             AddExchangeGroup("DISTANT PREMIUM", "High-value opportunities worth travelling for", game.State.Properties.Where(property => !property.IsOwned && property.Tier >= 3));
             var dream = UiKit.Card("waiting"); dream.AddToClassList("dream-card"); dream.Add(UiKit.Text("DREAM PROPERTY", 10, true, UiKit.Amber)); dream.Add(UiKit.Text("Royal Riverside Tower", 19, true)); dream.Add(UiKit.Text("Locked · unlock at Company Level 4", 12, true, UiKit.Amber)); dream.Add(UiKit.Text("Estimated rent 9,200 PLN / day · Luxury auction tomorrow", 11, false, UiKit.Muted)); content.Add(dream);
         }
@@ -614,7 +637,7 @@ namespace DistrictEmpire.Presentation
         private void RenderCompany()
         {
             content.Add(SectionHeading("YOUR COMPANY", "District Empire"));
-            var card = UiKit.Card("briefing"); card.Add(UiKit.Text("PAWEŁ W. · CEO", 11, true, UiKit.Muted)); card.Add(UiKit.Text("Empire value " + Money(CompanyValue()), 24, true)); card.Add(UiKit.Text("Level " + game.State.CompanyLevel + " · " + game.State.Xp + "/" + (game.State.CompanyLevel * 100) + " XP · Warsaw", 12, false, UiKit.Muted));
+            var card = UiKit.Card("briefing"); card.Add(UiKit.Text("PAWEŁ W. · CEO", 11, true, UiKit.Muted)); card.Add(UiKit.Text("Empire value " + Money(CompanyValue()), 24, true)); card.Add(UiKit.Text("Level " + game.State.CompanyLevel + " · " + game.State.Xp + "/" + (game.State.CompanyLevel * 100) + " XP · Poland", 12, false, UiKit.Muted));
             var metrics = new VisualElement(); metrics.AddToClassList("briefing-metrics");
             metrics.Add(Metric("Residential", game.State.Properties.Count(property => property.IsOwned && property.Use == PropertyUse.Residential).ToString(), "income"));
             metrics.Add(Metric("Commercial", game.State.Properties.Count(property => property.IsOwned && property.Use == PropertyUse.Business).ToString(), "neutral"));

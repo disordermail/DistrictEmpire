@@ -46,6 +46,8 @@
 .map-intro { color: #596a79; font-size: 13px; margin-bottom: 10px; }
 .menu-panel { position: absolute; top: 56px; right: 12px; width: 290px; background-color: #ffffff; border-width: 1px; border-color: #dce4ea; border-radius: 10px; padding: 14px; }
 .map-stage { position: relative; height: 470px; margin-top: 12px; margin-bottom: 10px; overflow: hidden; background-color: #b8d6f2; border-width: 1px; border-color: #92b5d3; border-radius: 8px; }
+.osm-tile-layer { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.osm-tile { position: absolute; width: 33.334%; height: 33.334%; }
 .map-activity { position: absolute; left: 14px; top: 14px; padding: 7px 9px; background-color: #ffffff; color: #596a79; border-radius: 14px; border-width: 1px; border-color: #dce4ea; }
 .map-pin { position: absolute; width: 58px; height: 58px; min-width: 58px; min-height: 58px; margin-left: -29px; margin-top: -29px; padding: 6px; justify-content: center; align-items: center; background-color: #ffffff; border-width: 2px; border-radius: 8px; color: #15212d; }
 .map-pin-available { border-color: #07875f; background-color: #e5f6ef; }
@@ -54,6 +56,7 @@
 .map-legend { flex-direction: row; gap: 8px; align-items: center; }
 .map-source-card { padding: 13px; }
 .market-tabs { flex-direction: row; gap: 6px; margin-top: 8px; margin-bottom: 10px; }
+.map-region-tabs { flex-direction: row; gap: 6px; margin-top: 8px; }
 .property-hero { padding: 16px; }
 .property-facts { flex-direction: row; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
 .fact { width: 47%; padding: 8px; background-color: #ffffff; border-width: 1px; border-color: #dce4ea; border-radius: 7px; }

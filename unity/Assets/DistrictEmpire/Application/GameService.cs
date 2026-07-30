@@ -344,7 +344,7 @@ namespace DistrictEmpire.Application
         private static GameState CreateNewGame()
         {
             var state = new GameState { LastClockUtcTicks = DateTime.UtcNow.Ticks, RentReady = 620 };
-            state.Properties.Add(new Property { Id = "old-town", Name = "Mokotow Starter", District = "Mokotow", Icon = "HOME", Price = 18000, BaseDailyRent = 620, Tier = 1, Category = "Apartments", MapX = 18, MapY = 58, Condition = 78, IsOwned = true, Stage = PropertyStage.Occupied, Use = PropertyUse.Residential, TenantName = "Maria Kowalska", TenantRole = "Teacher · single mother", TenantStory = "Maria teaches nearby and is building a new life in Mokotow.", Relationship = 62, TenantDailyRent = 620, BuildingName = "Mokotow Gardens", BuildingOwnedUnits = 3, BuildingTotalUnits = 10 });
+            state.Properties.Add(new Property { Id = "old-town", Name = "Kazimierz Starter", District = "Krakow", MarketRegionId = "malopolska", Icon = "HOME", Price = 18000, BaseDailyRent = 620, Tier = 1, Category = "Apartments", MapX = 18, MapY = 58, Condition = 78, IsOwned = true, Stage = PropertyStage.Occupied, Use = PropertyUse.Residential, TenantName = "Maria Kowalska", TenantRole = "Teacher · single mother", TenantStory = "Maria teaches nearby and is building a new life in Krakow.", Relationship = 62, TenantDailyRent = 620, BuildingName = "Kazimierz Courtyard", BuildingOwnedUnits = 3, BuildingTotalUnits = 10 });
             AddMarketProperties(state);
             RefreshDailyEvents(state);
             return state;
@@ -355,14 +355,19 @@ namespace DistrictEmpire.Application
             var starter = State.Properties.FirstOrDefault(p => p.Id == "old-town");
             if (starter != null)
             {
-                starter.Name = "Mokotow Starter";
-                starter.District = "Mokotow";
+                starter.Name = "Kazimierz Starter";
+                starter.District = "Krakow";
+                starter.MarketRegionId = "malopolska";
                 starter.Icon = "HOME";
                 starter.Tier = 1;
                 starter.Category = "Apartments";
                 starter.MapX = 18;
                 starter.MapY = 58;
             }
+            ConfigureRegionalProperty(State.Properties.FirstOrDefault(p => p.Id == "riverside"), "Podgorze Studio", "Krakow", "malopolska", "REN", "Renovation", 68, 45);
+            ConfigureRegionalProperty(State.Properties.FirstOrDefault(p => p.Id == "wola-corner"), "Torun Corner", "Torun", "kujawsko-pomorskie", "MIX", "Mixed use", 38, 36);
+            ConfigureRegionalProperty(State.Properties.FirstOrDefault(p => p.Id == "zoliborz-arcade"), "Bydgoszcz Arcade", "Bydgoszcz", "kujawsko-pomorskie", "RET", "Retail", 28, 19);
+            ConfigureRegionalProperty(State.Properties.FirstOrDefault(p => p.Id == "srodmiescie-house"), "Krakow Royal House", "Krakow", "malopolska", "PRE", "Premium", 49, 61);
             if (!State.Properties.Any(p => p.Id == "wola-corner")) AddMarketProperties(State);
             repository.Save(State);
         }
@@ -373,9 +378,9 @@ namespace DistrictEmpire.Application
             if (starter != null)
             {
                 if (string.IsNullOrEmpty(starter.TenantRole)) starter.TenantRole = "Teacher · single mother";
-                if (string.IsNullOrEmpty(starter.TenantStory)) starter.TenantStory = "Maria teaches nearby and is building a new life in Mokotow.";
+                starter.TenantStory = "Maria teaches nearby and is building a new life in Krakow.";
                 if (starter.Relationship <= 0) starter.Relationship = 62;
-                if (string.IsNullOrEmpty(starter.BuildingName)) starter.BuildingName = "Mokotow Gardens";
+                starter.BuildingName = "Kazimierz Courtyard";
                 if (starter.BuildingTotalUnits <= 0) starter.BuildingTotalUnits = 10;
                 if (starter.BuildingOwnedUnits <= 0) starter.BuildingOwnedUnits = 3;
             }
@@ -429,10 +434,22 @@ namespace DistrictEmpire.Application
 
         private static void AddMarketProperties(GameState state)
         {
-            state.Properties.Add(new Property { Id = "riverside", Name = "Riverside Studio", District = "Praga", Icon = "REN", Price = 22000, BaseDailyRent = 760, Tier = 1, Category = "Renovation", MapX = 68, MapY = 45, Condition = 68, Stage = PropertyStage.Available });
-            state.Properties.Add(new Property { Id = "wola-corner", Name = "Wola Corner", District = "Wola", Icon = "MIX", Price = 36000, BaseDailyRent = 1180, Tier = 2, Category = "Mixed use", MapX = 38, MapY = 36, Condition = 86, Stage = PropertyStage.Available });
-            state.Properties.Add(new Property { Id = "zoliborz-arcade", Name = "Zoliborz Arcade", District = "Zoliborz", Icon = "RET", Price = 45500, BaseDailyRent = 1460, Tier = 2, Category = "Retail", MapX = 28, MapY = 19, Condition = 91, Stage = PropertyStage.Available });
-            state.Properties.Add(new Property { Id = "srodmiescie-house", Name = "Srodmiescie House", District = "Srodmiescie", Icon = "PRE", Price = 74000, BaseDailyRent = 2360, Tier = 3, Category = "Premium", MapX = 49, MapY = 61, Condition = 95, Stage = PropertyStage.Available });
+            state.Properties.Add(new Property { Id = "riverside", Name = "Podgorze Studio", District = "Krakow", MarketRegionId = "malopolska", Icon = "REN", Price = 22000, BaseDailyRent = 760, Tier = 1, Category = "Renovation", MapX = 68, MapY = 45, Condition = 68, Stage = PropertyStage.Available });
+            state.Properties.Add(new Property { Id = "wola-corner", Name = "Torun Corner", District = "Torun", MarketRegionId = "kujawsko-pomorskie", Icon = "MIX", Price = 36000, BaseDailyRent = 1180, Tier = 2, Category = "Mixed use", MapX = 38, MapY = 36, Condition = 86, Stage = PropertyStage.Available });
+            state.Properties.Add(new Property { Id = "zoliborz-arcade", Name = "Bydgoszcz Arcade", District = "Bydgoszcz", MarketRegionId = "kujawsko-pomorskie", Icon = "RET", Price = 45500, BaseDailyRent = 1460, Tier = 2, Category = "Retail", MapX = 28, MapY = 19, Condition = 91, Stage = PropertyStage.Available });
+            state.Properties.Add(new Property { Id = "srodmiescie-house", Name = "Krakow Royal House", District = "Krakow", MarketRegionId = "malopolska", Icon = "PRE", Price = 74000, BaseDailyRent = 2360, Tier = 3, Category = "Premium", MapX = 49, MapY = 61, Condition = 95, Stage = PropertyStage.Available });
+        }
+
+        private static void ConfigureRegionalProperty(Property property, string name, string district, string regionId, string icon, string category, float mapX, float mapY)
+        {
+            if (property == null) return;
+            property.Name = name;
+            property.District = district;
+            property.MarketRegionId = regionId;
+            property.Icon = icon;
+            property.Category = category;
+            property.MapX = mapX;
+            property.MapY = mapY;
         }
 
         private void RefreshDailyEvents()
@@ -446,7 +463,7 @@ namespace DistrictEmpire.Application
             state.EventsDay = state.Day;
             var evenDay = state.Day % 2 == 0;
             state.Events.Add(new CityEvent { Id = "festival-" + state.Day, Title = evenDay ? "Night Market" : "Summer Festival", Detail = evenDay ? "Local shops are looking for more foot traffic tonight." : "Tourism demand is rising. Promote your next business listing.", Reward = "+3 influence · +10 XP" });
-            state.Events.Add(new CityEvent { Id = "district-" + state.Day, Title = evenDay ? "Landlord Meeting" : "District Cleanup", Detail = evenDay ? "Meet local owners and learn about an upcoming auction." : "Support Mokotow residents and strengthen your company reputation.", Reward = "+3 influence · +10 XP" });
+            state.Events.Add(new CityEvent { Id = "district-" + state.Day, Title = evenDay ? "Landlord Meeting" : "District Cleanup", Detail = evenDay ? "Meet local owners and learn about an upcoming auction." : "Support local residents and strengthen your company reputation.", Reward = "+3 influence · +10 XP" });
         }
 
         private static List<Applicant> CreateApplicants(PropertyUse use) => use == PropertyUse.Business

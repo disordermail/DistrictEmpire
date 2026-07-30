@@ -53,6 +53,7 @@ namespace DistrictEmpire.Domain
         public string Id;
         public string Name;
         public string District;
+        public string MarketRegionId;
         public string Icon;
         public int Price;
         public int BaseDailyRent;
