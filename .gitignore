@@ -20,6 +20,7 @@ unity/*.pdb
 unity/*.mdb
 unity/*.opendb
 unity/*.VC.db
+unity/.utmp/
 
 # Backend
 backend/.env
