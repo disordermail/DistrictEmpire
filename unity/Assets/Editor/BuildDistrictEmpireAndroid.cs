@@ -8,7 +8,7 @@ namespace DistrictEmpire.EditorTools
     public static class BuildDistrictEmpireAndroid
     {
         private const string ScenePath = "Assets/DistrictEmpire/Presentation/Scenes/DistrictEmpireVerticalSlice.unity";
-        private const string OutputPath = "Builds/DistrictEmpire-0.1.apk";
+        private const string OutputPath = "Builds/DistrictEmpire-0.2.apk";
 
         [MenuItem("District Empire/Build Android APK")]
         public static void BuildApk()
@@ -18,6 +18,8 @@ namespace DistrictEmpire.EditorTools
             PlayerSettings.companyName = "DisorderMail";
             PlayerSettings.productName = "District Empire";
             PlayerSettings.applicationIdentifier = "com.disordermail.districtempire";
+            PlayerSettings.bundleVersion = "0.2";
+            PlayerSettings.Android.bundleVersionCode = 2;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
             PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel25;
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;

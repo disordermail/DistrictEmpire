@@ -56,8 +56,12 @@ namespace DistrictEmpire.Presentation
         {
             root.Clear();
             root.Add(BuildHeader());
-            content = new ScrollView { name = "ScreenContent", verticalScrollerVisibility = ScrollerVisibility.Hidden };
-            content.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
+            content = new ScrollView(ScrollViewMode.Vertical) { name = "ScreenContent", verticalScrollerVisibility = ScrollerVisibility.Hidden, horizontalScrollerVisibility = ScrollerVisibility.Hidden };
+            content.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
+            content.style.flexGrow = 1;
+            content.style.flexShrink = 1;
+            content.style.minWidth = 0;
+            content.style.minHeight = 0;
             content.AddToClassList("screen-scroll");
             root.Add(content);
             switch (screen)
@@ -86,8 +90,8 @@ namespace DistrictEmpire.Presentation
             title.AddToClassList("header-title");
             title.style.flexGrow = 1;
             title.style.flexShrink = 1;
-            title.Add(UiKit.Text("POLSKA · OFFLINE MVP", 11, true, UiKit.Muted));
-            title.Add(UiKit.Text("District Empire", 25, true));
+            var market = UiKit.Text("POLSKA · MVP", 10, true, UiKit.Muted); market.style.whiteSpace = WhiteSpace.NoWrap; title.Add(market);
+            var gameTitle = UiKit.Text("District Empire", 20, true); gameTitle.style.whiteSpace = WhiteSpace.NoWrap; title.Add(gameTitle);
             row.Add(title);
             var controls = UiKit.Row("header-controls");
             controls.style.flexShrink = 0;
