@@ -8,10 +8,10 @@
 .level-pill-label { color: #596a79; font-size: 9px; -unity-font-style: bold; }
 .level-pill-value { color: #a97816; font-size: 18px; -unity-font-style: bold; }
 .header-controls { flex-direction: row; flex-shrink: 0; align-items: center; gap: 6px; }
-.wallet-strip { flex-direction: row; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
-.wallet-chip { width: 48%; min-width: 0; min-height: 42px; justify-content: center; padding: 5px 8px; overflow: hidden; background-color: #f7fafc; border-width: 1px; border-color: #dce4ea; border-radius: 8px; }
-.wallet-chip-label { color: #596a79; font-size: 10px; }
-.wallet-chip-value { color: #07875f; font-size: 12px; -unity-font-style: bold; }
+.wallet-strip { flex-direction: row; flex-wrap: nowrap; gap: 4px; margin-top: 7px; }
+.wallet-chip { flex-grow: 1; flex-shrink: 1; flex-basis: 0; min-width: 0; min-height: 42px; justify-content: center; padding: 5px 5px; overflow: hidden; background-color: #f7fafc; border-width: 1px; border-color: #dce4ea; border-radius: 8px; }
+.wallet-chip-label { color: #596a79; font-size: 8px; }
+.wallet-chip-value { color: #07875f; font-size: 10px; -unity-font-style: bold; }
 .screen-scroll { flex-grow: 1; flex-shrink: 1; min-width: 0; min-height: 0; padding-left: 10px; padding-right: 10px; padding-top: 10px; padding-bottom: 10px; background-color: #e8eff5; }
 .de-card { padding: 14px; margin-bottom: 10px; background-color: #ffffff; border-width: 1px; border-color: #c9d6e1; border-radius: 9px; }
 .de-card-income { background-color: #d8f4e7; border-color: #56b98a; border-left-width: 5px; }

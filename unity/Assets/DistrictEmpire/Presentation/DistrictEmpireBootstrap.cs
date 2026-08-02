@@ -91,7 +91,7 @@ namespace DistrictEmpire.Presentation
             title.style.flexGrow = 1;
             title.style.flexShrink = 1;
             var market = UiKit.Text("POLSKA · MVP", 10, true, UiKit.Muted); market.style.whiteSpace = WhiteSpace.NoWrap; title.Add(market);
-            var gameTitle = UiKit.Text("District Empire", 20, true); gameTitle.style.whiteSpace = WhiteSpace.NoWrap; title.Add(gameTitle);
+            var gameTitle = UiKit.Text("District Empire", 16, true); gameTitle.style.whiteSpace = WhiteSpace.NoWrap; title.Add(gameTitle);
             row.Add(title);
             var controls = UiKit.Row("header-controls");
             controls.style.flexShrink = 0;
@@ -104,9 +104,9 @@ namespace DistrictEmpire.Presentation
             header.Add(row);
             var wallet = new VisualElement(); wallet.AddToClassList("wallet-strip"); wallet.style.flexShrink = 0;
             wallet.Add(WalletChip("Cash", Money(game.State.Cash)));
-            wallet.Add(WalletChip("Rent/day", Money(OccupiedRent())));
-            wallet.Add(WalletChip("Buildings", game.State.Properties.Count(p => p.IsOwned).ToString()));
-            wallet.Add(WalletChip("Influence", game.State.Influence.ToString()));
+            wallet.Add(WalletChip("Rent/d", Money(OccupiedRent())));
+            wallet.Add(WalletChip("Units", game.State.Properties.Count(p => p.IsOwned).ToString()));
+            wallet.Add(WalletChip("Inf.", game.State.Influence.ToString()));
             header.Add(wallet);
             return header;
         }
@@ -134,8 +134,8 @@ namespace DistrictEmpire.Presentation
             var button = new Button(() => { mapSheetOpen = false; screen = destination; Render(); });
             button.AddToClassList("nav-tab");
             if (screen == destination) button.AddToClassList("nav-tab-active");
-            button.Add(UiKit.Text(icon, 16, true));
-            button.Add(UiKit.Text(label, 9, true));
+            var iconLabel = UiKit.Text(icon, 16, true); iconLabel.style.whiteSpace = WhiteSpace.NoWrap; button.Add(iconLabel);
+            var textLabel = UiKit.Text(label, 8, true); textLabel.style.whiteSpace = WhiteSpace.NoWrap; button.Add(textLabel);
             if (destination == "Portfolio" && ImportantActionCount() > 0)
             {
                 var badge = UiKit.Text(ImportantActionCount().ToString(), 9, true); badge.AddToClassList("nav-badge"); button.Add(badge);
