@@ -35,7 +35,9 @@ namespace DistrictEmpire.EditorTools
                 AssetDatabase.CreateAsset(panelSettings, PanelSettingsPath);
             }
             panelSettings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            panelSettings.referenceResolution = new Vector2Int(1440, 3120);
+            panelSettings.referenceResolution = new Vector2Int(540, 960);
+            panelSettings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
+            panelSettings.match = 0f;
             EditorUtility.SetDirty(panelSettings);
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);

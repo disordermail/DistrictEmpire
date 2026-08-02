@@ -12,6 +12,7 @@ namespace DistrictEmpire.Presentation
     public sealed class DistrictEmpireBootstrap : MonoBehaviour
     {
         private GameService game;
+        private VisualElement documentRoot;
         private VisualElement root;
         private ScrollView content;
         private string screen = "Portfolio";
@@ -24,6 +25,9 @@ namespace DistrictEmpire.Presentation
         private int auctionRefreshCount;
         private OpenStreetMapTileLayer mapTiles;
         private string mapRegionId = "malopolska";
+        private Rect lastSafeArea;
+        private int lastScreenWidth;
+        private int lastScreenHeight;
         private static readonly MapRegion[] MapRegions =
         {
             new("malopolska", "Malopolska", 50.0614d, 19.9366d),
@@ -35,21 +39,54 @@ namespace DistrictEmpire.Presentation
             game = new GameService(new JsonLocalGameRepository(), new GameClock());
             mapTiles = GetComponent<OpenStreetMapTileLayer>();
             if (mapTiles == null) mapTiles = gameObject.AddComponent<OpenStreetMapTileLayer>();
-            root = GetComponent<UIDocument>().rootVisualElement;
+            documentRoot = GetComponent<UIDocument>().rootVisualElement;
             var style = Resources.Load<StyleSheet>("DistrictEmpireStyle");
-            if (style != null) root.styleSheets.Add(style);
+            if (style != null) documentRoot.styleSheets.Add(style);
+            documentRoot.style.flexGrow = 1;
+            root = new VisualElement();
             root.AddToClassList("app-shell");
             root.style.flexGrow = 1;
+            root.style.minWidth = 0;
+            root.style.minHeight = 0;
+            documentRoot.Add(root);
+            documentRoot.RegisterCallback<GeometryChangedEvent>(_ => ApplySafeArea());
+            documentRoot.schedule.Execute(ApplySafeArea);
             Render();
         }
 
         private void Update()
         {
+            RefreshSafeAreaIfNeeded();
             if (Time.unscaledTime < nextClockRefresh) return;
             nextClockRefresh = Time.unscaledTime + 1f;
             var lifecycleBefore = LifecycleSignature();
             game.Tick();
             if (!menuOpen && lifecycleBefore != LifecycleSignature()) Render();
+        }
+
+        private void RefreshSafeAreaIfNeeded()
+        {
+            if (lastScreenWidth == Screen.width && lastScreenHeight == Screen.height && lastSafeArea == Screen.safeArea) return;
+            ApplySafeArea();
+        }
+
+        private void ApplySafeArea()
+        {
+            if (documentRoot == null || Screen.width <= 0 || Screen.height <= 0) return;
+            var panelWidth = documentRoot.resolvedStyle.width;
+            var panelHeight = documentRoot.resolvedStyle.height;
+            if (float.IsNaN(panelWidth) || float.IsNaN(panelHeight) || panelWidth <= 0 || panelHeight <= 0) return;
+
+            var safe = Screen.safeArea;
+            var xScale = panelWidth / Screen.width;
+            var yScale = panelHeight / Screen.height;
+            root.style.paddingLeft = safe.xMin * xScale;
+            root.style.paddingRight = (Screen.width - safe.xMax) * xScale;
+            root.style.paddingTop = (Screen.height - safe.yMax) * yScale;
+            root.style.paddingBottom = safe.yMin * yScale;
+            lastSafeArea = safe;
+            lastScreenWidth = Screen.width;
+            lastScreenHeight = Screen.height;
         }
 
         private void Render()
@@ -85,7 +122,6 @@ namespace DistrictEmpire.Presentation
             header.AddToClassList("top-header");
             header.style.flexShrink = 0;
             var row = UiKit.Row("header-row");
-            row.style.minHeight = 64;
             var title = new VisualElement();
             title.AddToClassList("header-title");
             title.style.flexGrow = 1;

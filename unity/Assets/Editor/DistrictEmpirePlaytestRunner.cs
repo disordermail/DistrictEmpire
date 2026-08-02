@@ -3,6 +3,7 @@ using DistrictEmpire.Application;
 using DistrictEmpire.Domain;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace DistrictEmpire.Editor
 {
@@ -11,6 +12,12 @@ namespace DistrictEmpire.Editor
         [MenuItem("District Empire/Run Core Playtest")]
         public static void RunCorePlaytest()
         {
+            var panelSettings = AssetDatabase.LoadAssetAtPath<PanelSettings>("Assets/DistrictEmpire/Presentation/UI/DistrictEmpirePanelSettings.asset");
+            Require(panelSettings != null, "Panel settings asset is missing.");
+            Require(panelSettings.scaleMode == PanelScaleMode.ScaleWithScreenSize, "UI must use Scale With Screen Size.");
+            Require(panelSettings.referenceResolution == new Vector2Int(540, 960), "UI reference resolution must match the portrait Game View design size.");
+            Require(panelSettings.screenMatchMode == PanelScreenMatchMode.MatchWidthOrHeight && Mathf.Approximately(panelSettings.match, 0f), "UI must match screen width on portrait devices.");
+
             var service = new GameService(new MemoryRepository(), new GameClock());
             var starter = RequireProperty(service, "old-town");
             Require(starter.Stage == PropertyStage.Occupied, "Starter property is not occupied.");
