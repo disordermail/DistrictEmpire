@@ -126,14 +126,14 @@ namespace DistrictEmpire.Presentation
             title.AddToClassList("header-title");
             title.style.flexGrow = 1;
             title.style.flexShrink = 1;
-            var market = UiKit.Text("POLSKA · MVP", 10, true, UiKit.Muted); market.style.whiteSpace = WhiteSpace.NoWrap; title.Add(market);
+            var market = UiKit.Text("POLSKA · MVP", 9, true, UiKit.Muted); market.style.whiteSpace = WhiteSpace.NoWrap; title.Add(market);
             var gameTitle = UiKit.Text("District Empire", 16, true); gameTitle.style.whiteSpace = WhiteSpace.NoWrap; title.Add(gameTitle);
             row.Add(title);
             var controls = UiKit.Row("header-controls");
             controls.style.flexShrink = 0;
             var level = new VisualElement(); level.AddToClassList("level-pill");
-            level.Add(UiKit.Text("LVL", 9, true, UiKit.Muted));
-            level.Add(UiKit.Text(game.State.CompanyLevel.ToString(), 18, true, UiKit.Amber));
+            level.Add(UiKit.Text("LVL", 8, true, UiKit.Muted));
+            level.Add(UiKit.Text(game.State.CompanyLevel.ToString(), 16, true, UiKit.Amber));
             controls.Add(level);
             var menu = UiKit.Button("☰", ShowMenu, "icon"); menu.tooltip = "Company headquarters"; controls.Add(menu);
             row.Add(controls);
@@ -150,8 +150,8 @@ namespace DistrictEmpire.Presentation
         private VisualElement WalletChip(string label, string value)
         {
             var chip = new VisualElement(); chip.AddToClassList("wallet-chip");
-            chip.Add(UiKit.Text(label, 10, false, UiKit.Muted));
-            var amount = UiKit.Text(value, 11, true, UiKit.Green); amount.style.whiteSpace = WhiteSpace.NoWrap; chip.Add(amount);
+            chip.Add(UiKit.Text(label, 9, false, UiKit.Muted));
+            var amount = UiKit.Text(value, 10, true, UiKit.Green); amount.style.whiteSpace = WhiteSpace.NoWrap; chip.Add(amount);
             return chip;
         }
 
@@ -184,8 +184,8 @@ namespace DistrictEmpire.Presentation
             var owned = game.State.Properties.Where(p => p.IsOwned).ToList();
             var desk = UiKit.Card("briefing"); desk.AddToClassList("today-hero");
             desk.Add(UiKit.Text("MY PORTFOLIO", 11, true, UiKit.Muted));
-            desk.Add(UiKit.Text("Manage your properties", 24, true));
-            desk.Add(UiKit.Text("Empire value " + Money(CompanyValue()), 14, true, UiKit.Blue));
+            desk.Add(UiKit.Text("Manage your properties", 21, true));
+            desk.Add(UiKit.Text("Empire value " + Money(CompanyValue()), 12, true, UiKit.Blue));
             var metrics = new VisualElement(); metrics.AddToClassList("briefing-metrics");
             metrics.Add(Metric("Rent ready", Money(game.State.RentReady), game.State.RentReady > 0 ? "income" : "neutral"));
             metrics.Add(Metric("Repairs", TaskCount().ToString(), TaskCount() > 0 ? "attention" : "neutral"));
@@ -196,7 +196,7 @@ namespace DistrictEmpire.Presentation
             var rent = UiKit.Card(game.State.RentReady > 0 ? "collect" : "neutral"); rent.AddToClassList("rent-card");
             var copy = new VisualElement(); copy.AddToClassList("rent-copy");
             copy.Add(UiKit.Text(game.State.RentReady > 0 ? "RENT READY TO COLLECT" : "NEXT RENT", 10, true, game.State.RentReady > 0 ? UiKit.Gold : UiKit.Muted));
-            copy.Add(UiKit.Text(game.State.RentReady > 0 ? Money(game.State.RentReady) : "Tomorrow", 24, true));
+            copy.Add(UiKit.Text(game.State.RentReady > 0 ? Money(game.State.RentReady) : "Tomorrow", 21, true));
             copy.Add(UiKit.Text($"{Money(ResidentialRent())} homes · {Money(BusinessRent())} businesses", 11, false, UiKit.Muted));
             rent.Add(copy);
             Button collect = null;
@@ -264,7 +264,10 @@ namespace DistrictEmpire.Presentation
         {
             var line = UiKit.Row("news-line"); line.AddToClassList("news-" + tone);
             var dot = new VisualElement(); dot.AddToClassList("news-dot"); line.Add(dot);
-            var copy = new VisualElement(); copy.Add(UiKit.Text(title, 12, true)); copy.Add(UiKit.Text(detail, 10, false, UiKit.Muted)); line.Add(copy); return line;
+            var copy = new VisualElement(); copy.AddToClassList("news-copy");
+            var titleLabel = UiKit.Text(title, 12, true); titleLabel.AddToClassList("news-title"); copy.Add(titleLabel);
+            var detailLabel = UiKit.Text(detail, 10, false, UiKit.Muted); detailLabel.AddToClassList("news-detail"); copy.Add(detailLabel);
+            line.Add(copy); return line;
         }
 
         private VisualElement Metric(string label, string value, string tone)
@@ -886,11 +889,12 @@ namespace DistrictEmpire.Presentation
             icon.AddToClassList(property.Use == PropertyUse.Business ? "portfolio-property-icon-business" : "portfolio-property-icon-home");
             icon.AddToClassList(property.Stage == PropertyStage.Occupied ? "portfolio-property-icon-full" : "portfolio-property-icon-empty");
             identity.Add(icon);
-            identity.Add(UiKit.Text(property.Name, 16, true));
+            var propertyName = UiKit.Text(property.Name, 16, true); propertyName.AddToClassList("portfolio-property-name"); identity.Add(propertyName);
             top.Add(identity);
             var state = UiKit.Text(PortfolioState(property), 10, true, StatusColor(property)); state.AddToClassList("portfolio-property-state"); top.Add(state); card.Add(top);
             var dailyRent = property.Stage == PropertyStage.Occupied ? game.EffectiveDailyRent(property) : property.BaseDailyRent;
-            card.Add(UiKit.Text("Rent " + Money(dailyRent) + " / day · " + property.District + " · " + PortfolioState(property), 11, false, UiKit.Muted));
+            var summary = UiKit.Text("Rent " + Money(dailyRent) + " / day · " + property.District + " · " + PortfolioState(property), 11, false, UiKit.Muted);
+            summary.AddToClassList("portfolio-property-summary"); card.Add(summary);
             return card;
         }
 
