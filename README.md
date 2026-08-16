@@ -48,9 +48,14 @@ The MVP keeps the final architecture but limits content scope:
 - Five property types.
 - Server time, ledger entries, idempotency keys, localization, and data-driven config from day one.
 
+## Local Unity Workflow
+
+Polski przewodnik ponownego uruchomienia, testowania i budowania prototypu:
+[docs/UNITY_OD_ZERA_PL.md](docs/UNITY_OD_ZERA_PL.md).
+
 ## Next Setup Steps
 
-1. Create a Unity 6 LTS project in `unity/`.
-2. Open the project and keep the existing `Assets/DistrictEmpire` folder.
-3. Create a Supabase project and apply SQL migrations from `backend/supabase/migrations`.
+1. Open the existing Unity 6 LTS project in `unity/`.
+2. Run the vertical slice scene and core playtest described in the local workflow guide.
+3. Create a Supabase project only when backend work begins, then apply migrations from `backend/supabase/migrations`.
 4. Export spreadsheet data into `content/` using the specs in `docs/source-package`.
