@@ -53,6 +53,9 @@ The MVP keeps the final architecture but limits content scope:
 Polski przewodnik ponownego uruchomienia, testowania i budowania prototypu:
 [docs/UNITY_OD_ZERA_PL.md](docs/UNITY_OD_ZERA_PL.md).
 
+Szczegółowy polski opis produktu, pętli rozgrywki, systemów i zakresu:
+[docs/CZYM_JEST_DISTRICT_EMPIRE_PL.md](docs/CZYM_JEST_DISTRICT_EMPIRE_PL.md).
+
 ## Next Setup Steps
 
 1. Open the existing Unity 6 LTS project in `unity/`.
